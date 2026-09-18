@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "" FORCE)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
 
 # Change to your project name
@@ -26,7 +26,7 @@ CPMAddPackage(
   NAME
     JUCE
   GIT_TAG
-    9.0.1
+    9.0.2
   GITHUB_REPOSITORY
     juce-framework/JUCE
 )

@@ -85,3 +85,32 @@ open build-xcode/Modulate.xcodeproj
 1. Press **Cmd+B** to build the plugin
 2. Press **Cmd+R** to run with AudioPluginHost
 4. Load your plugin in AudioPluginHost
+
+## Validating the Plugin
+
+[pluginval](https://github.com/Tracktion/pluginval) loads the built plugin as a host would and
+tests it for stability. It is built from source on demand, so there is nothing to install.
+
+**Debug:**
+```bash
+cmake --build --preset debug --target validate   # builds, then validates
+ctest --preset debug                             # validates an existing build
+```
+
+**Release:**
+
+```bash
+cmake --build --preset release --target validate   # builds, then validates
+ctest --preset release                             # validates an existing build
+```
+
+Logs land in `build-debug/pluginval-logs/` or `build-release/pluginval-logs/`. Strictness defaults
+to 10; use `-DPLUGINVAL_STRICTNESS=5` (range 1–10) for a faster run, or `-DENABLE_PLUGINVAL=OFF` to
+skip pluginval entirely.
+
+The AU test validates the installed component in `~/Library/Audio/Plug-Ins/Components`, since macOS
+resolves Audio Units through its registry rather than by path — so it needs `COPY_PLUGIN_AFTER_BUILD`
+left on. Note that this means whichever configuration was built most recently is the one installed,
+so build the release preset before running `ctest --preset release`. Steinberg's VST3 conformance
+validator is off by default, as it pulls ~300MB of SDK for one extra test; enable it with
+`-DPLUGINVAL_VST3_VALIDATOR=ON`.

@@ -174,7 +174,9 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
     static const juce::String pitchIDs[3]  = { "osc1_pitch",  "osc2_pitch",  "osc3_pitch"  };
     static const juce::String fineIDs[3]   = { "osc1_fine",   "osc2_fine",   "osc3_fine"   };
 
-    const float  coarseSemis = owner.getModulatedParam("coarse_pitch");
+    static const juce::String coarsePitchID { "coarse_pitch" };
+
+    const float  coarseSemis = owner.getModulatedParam(coarsePitchID);
     const double coarseRatio = std::pow(2.0, coarseSemis / 12.0);
 
     static const juce::String noiseEnableID { "noise_enable" };

@@ -6,6 +6,8 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
 # Change to your project name
 project(Modulate)
 
+# Enables `ctest`
+enable_testing()
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_XCODE_GENERATE_SCHEME OFF)
@@ -113,3 +115,6 @@ target_link_libraries(${PROJECT_NAME}
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Pluginval.cmake)
+add_pluginval_tests(${PROJECT_NAME})

@@ -7,6 +7,24 @@ namespace
     const juce::String kWaveformAIDs[kNumOscillators] = { "osc1_waveform",   "osc2_waveform",   "osc3_waveform"   };
     const juce::String kWaveformBIDs[kNumOscillators] = { "osc1_waveform_b", "osc2_waveform_b", "osc3_waveform_b" };
     const juce::String kMorphIDs[kNumOscillators]     = { "osc1_morph",      "osc2_morph",      "osc3_morph"      };
+
+    // Parameter IDs read from the audio thread, built once here so processBlock never allocates
+    // a juce::String (string literals and concatenation both allocate).
+    constexpr int kNumLFOs = 4;
+    const juce::String kLFORateIDs[kNumLFOs]     = { "lfo1_rate",      "lfo2_rate",      "lfo3_rate",      "lfo4_rate"      };
+    const juce::String kLFOModeIDs[kNumLFOs]     = { "lfo1_mode",      "lfo2_mode",      "lfo3_mode",      "lfo4_mode"      };
+    const juce::String kLFOSyncIDs[kNumLFOs]     = { "lfo1_sync",      "lfo2_sync",      "lfo3_sync",      "lfo4_sync"      };
+    const juce::String kLFOSyncRateIDs[kNumLFOs] = { "lfo1_sync_rate", "lfo2_sync_rate", "lfo3_sync_rate", "lfo4_sync_rate" };
+
+    const juce::String kFilterEnableID    { "filter_enable" };
+    const juce::String kFilterModeID      { "filter_mode" };
+    const juce::String kFilterSlopeID     { "filter_slope" };
+    const juce::String kFilterCutoffID    { "filter_cutoff" };
+    const juce::String kFilterResonanceID { "filter_resonance" };
+    const juce::String kDriveID           { "drive" };
+    const juce::String kDriveHQID         { "drive_hq" };
+    const juce::String kMasterGainID      { "master_gain" };
+    const juce::String kNumVoicesID       { "num_voices" };
 }
 
 //==============================================================================
@@ -31,8 +49,8 @@ AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 //==============================================================================
 bool AudioPluginAudioProcessor::getBoolParam(const juce::String& paramID) const
 {
-    if (auto* param = dynamic_cast<juce::AudioParameterBool*>(apvts.getParameter(paramID)))
-        return param->get();
+    if (auto* param = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(paramID)))
+        return param->getIndex() != 0;
     jassertfalse;
     return false;
 }
@@ -67,7 +85,7 @@ float AudioPluginAudioProcessor::getModulatedParam(const juce::String& paramID) 
     if (!param)
         return 0.0f;
 
-    auto range = param->getNormalisableRange();
+    const auto& range = param->getNormalisableRange();
     auto assignment = modulationManager.getAssignment(paramID);
 
     if (!assignment.isAssigned())
@@ -326,7 +344,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     updateFilter();
 
-    const bool filterEnabled = getBoolParam("filter_enable");
+    const bool filterEnabled = getBoolParam(kFilterEnableID);
 
     updateOscillatorTables(false);
 
@@ -336,8 +354,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     if (filterEnabled)
     {
-        drive.setDrive(getModulatedParam("drive"));
-        drive.process(buffer, getBoolParam("drive_hq"));
+        drive.setDrive(getModulatedParam(kDriveID));
+        drive.process(buffer, getBoolParam(kDriveHQID));
 
         for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
         {
@@ -349,7 +367,7 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
         }
     }
     
-    const float masterGainDb = getFloatParam("master_gain");
+    const float masterGainDb = getFloatParam(kMasterGainID);
     buffer.applyGain(juce::Decibels::decibelsToGain(masterGainDb));
     
     outputMeterState.processBlock(buffer);
@@ -500,21 +518,19 @@ void AudioPluginAudioProcessor::blendWavetable(int oscIndex, float morph)
 void AudioPluginAudioProcessor::updateLFOs()
 {
     // Update LFO rates and modes from parameters
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < kNumLFOs; ++i)
     {
-        juce::String lfoPrefix = "lfo" + juce::String(i + 1) + "_";
-        
-        float rate = getModulatedParam(lfoPrefix + "rate");
+        float rate = getModulatedParam(kLFORateIDs[i]);
         lfos[i].setRate(rate);
-        
-        int modeIndex = getChoiceParam(lfoPrefix + "mode");
+
+        int modeIndex = getChoiceParam(kLFOModeIDs[i]);
         bool triggerMode = (modeIndex == 0);
         lfos[i].setTriggerMode(triggerMode);
-        
-        bool tempoSync = getBoolParam(lfoPrefix + "sync");
+
+        bool tempoSync = getBoolParam(kLFOSyncIDs[i]);
         lfos[i].setTempoSync(tempoSync);
-        
-        int tempoDivIndex = getChoiceParam(lfoPrefix + "sync_rate");
+
+        int tempoDivIndex = getChoiceParam(kLFOSyncRateIDs[i]);
         lfos[i].setTempoDivision(tempoDivIndex);
     }
 }
@@ -538,15 +554,15 @@ void AudioPluginAudioProcessor::rebuildLFOTablesFromState()
 
 void AudioPluginAudioProcessor::updateFilter()
 {
-    filter.setParameters(static_cast<FilterMode>(getChoiceParam("filter_mode")),
-                         static_cast<FilterSlope>(getChoiceParam("filter_slope")),
-                         getModulatedParam("filter_cutoff"),
-                         getModulatedParam("filter_resonance"));
+    filter.setParameters(static_cast<FilterMode>(getChoiceParam(kFilterModeID)),
+                         static_cast<FilterSlope>(getChoiceParam(kFilterSlopeID)),
+                         getModulatedParam(kFilterCutoffID),
+                         getModulatedParam(kFilterResonanceID));
 }
 
 void AudioPluginAudioProcessor::updateVoiceCount()
 {
-    const int desiredVoices = juce::roundToInt(getModulatedParam("num_voices"));
+    const int desiredVoices = juce::roundToInt(getModulatedParam(kNumVoicesID));
 
     if (desiredVoices == currentVoiceCount)
         return;

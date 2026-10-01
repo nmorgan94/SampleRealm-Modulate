@@ -10,6 +10,10 @@ namespace Parameters
 
         auto waveformNames = WavetableGenerator::getWaveformNames();
 
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID{"master_gain", versionHint}, "Master Gain",
+            juce::NormalisableRange<float>(-24.0f, 6.0f, 0.1f), 0.0f));
+
         const bool oscDefaults[3] = { true, false, false };
         const int waveformDefaults[3] = { 0, 1, 2 };
         
@@ -18,9 +22,9 @@ namespace Parameters
             juce::String oscPrefix = "osc" + juce::String(i);
             juce::String oscName = "Osc " + juce::String(i);
             
-            params.push_back(std::make_unique<juce::AudioParameterBool>(
+            params.push_back(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID{oscPrefix + "_enable", versionHint},
-                oscName + " Enable", oscDefaults[i - 1]));
+                oscName + " Enable", juce::StringArray { "Off", "On" }, oscDefaults[i - 1] ? 1 : 0));
             
             params.push_back(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID{oscPrefix + "_waveform", versionHint},
@@ -49,8 +53,9 @@ namespace Parameters
                 oscName + " Fine", -99, 99, 0));
         }
         
-        params.push_back(std::make_unique<juce::AudioParameterBool>(
-            juce::ParameterID{"noise_enable", versionHint}, "Noise Enable", false));
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+            juce::ParameterID{"noise_enable", versionHint}, "Noise Enable",
+            juce::StringArray { "Off", "On" }, 0));
 
         params.push_back(std::make_unique<juce::AudioParameterChoice>(
             juce::ParameterID{"noise_type", versionHint}, "Noise Type",
@@ -83,9 +88,9 @@ namespace Parameters
                 juce::NormalisableRange<float>(0.01f, 20.0f, 0.01f, 0.3f),
                 lfoRateDefaults[i - 1]));
             
-            params.push_back(std::make_unique<juce::AudioParameterBool>(
+            params.push_back(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID{lfoPrefix + "_sync", versionHint},
-                lfoName + " Sync", false));
+                lfoName + " Sync", juce::StringArray { "Off", "On" }, 0));
             
             params.push_back(std::make_unique<juce::AudioParameterChoice>(
                 juce::ParameterID{lfoPrefix + "_sync_rate", versionHint},
@@ -98,8 +103,9 @@ namespace Parameters
         }
         
         // Filter parameters
-        params.push_back(std::make_unique<juce::AudioParameterBool>(
-            juce::ParameterID{"filter_enable", versionHint}, "Filter Enable", true));
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+            juce::ParameterID{"filter_enable", versionHint}, "Filter Enable",
+            juce::StringArray { "Off", "On" }, 1));
         
         params.push_back(std::make_unique<juce::AudioParameterChoice>(
             juce::ParameterID{"filter_mode", versionHint}, "Filter Mode",
@@ -121,12 +127,9 @@ namespace Parameters
             juce::ParameterID{"drive", versionHint}, "Drive",
             juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.0f));
 
-        params.push_back(std::make_unique<juce::AudioParameterBool>(
-            juce::ParameterID{"drive_hq", versionHint}, "Drive HQ", false));
-
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID{"master_gain", versionHint}, "Master Gain",
-            juce::NormalisableRange<float>(-24.0f, 6.0f, 0.1f), 0.0f));
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+            juce::ParameterID{"drive_hq", versionHint}, "Drive HQ",
+            juce::StringArray { "Off", "On" }, 0));
 
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID{"glide_time", versionHint}, "Glide Time",

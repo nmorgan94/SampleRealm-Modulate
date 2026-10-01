@@ -38,5 +38,33 @@
       "displayName": "Release Build",
       "configurePreset": "release"
     }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug Tests",
+      "description": "Run pluginval validation against the Debug build",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "jobs": 0
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release Tests",
+      "description": "Run pluginval validation against the Release build",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "jobs": 0
+      }
+    }
   ]
 }

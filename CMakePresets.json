@@ -7,64 +7,183 @@
   },
   "configurePresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
       "name": "debug",
       "displayName": "Debug",
       "description": "Debug build with symbols",
-      "binaryDir": "${sourceDir}/build-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
       "name": "release",
       "displayName": "Release",
       "description": "Release build with optimizations",
-      "binaryDir": "${sourceDir}/build-release",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "xcode",
+      "displayName": "Xcode project (macOS)",
+      "description": "Generate an Xcode project for debugging",
+      "inherits": "base",
+      "generator": "Xcode",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
     }
   ],
   "buildPresets": [
     {
       "name": "debug",
       "displayName": "Debug Build",
-      "configurePreset": "debug"
+      "configurePreset": "debug",
+      "configuration": "Debug"
     },
     {
       "name": "release",
       "displayName": "Release Build",
-      "configurePreset": "release"
+      "configurePreset": "release",
+      "configuration": "Release"
+    },
+    {
+      "name": "unit",
+      "displayName": "Unit Tests Build",
+      "description": "Build the Catch2 unit tests (and the plugin code they link)",
+      "inherits": "debug",
+      "targets": ["unit_tests"]
+    },
+    {
+      "name": "test",
+      "displayName": "All Tests Build",
+      "description": "Build the plugin, pluginval and the unit tests",
+      "inherits": "debug",
+      "targets": ["all_tests"]
+    },
+    {
+      "name": "test-release",
+      "displayName": "All Tests Build (Release)",
+      "description": "Build the Release plugin, pluginval and the unit tests",
+      "inherits": "release",
+      "targets": ["all_tests"]
+    },
+    {
+      "name": "unit-release",
+      "displayName": "Unit Tests Build (Release)",
+      "description": "Build the Catch2 unit tests against the Release plugin code",
+      "inherits": "release",
+      "targets": ["unit_tests"]
+    },
+    {
+      "name": "run",
+      "displayName": "Run Standalone",
+      "description": "Build and launch the Debug Standalone app",
+      "inherits": "debug",
+      "targets": ["run"]
+    },
+    {
+      "name": "install-windows",
+      "displayName": "Install VST3 (Windows)",
+      "description": "Build the Debug VST3 and copy it into Common Files\\VST3. Run from an administrator prompt",
+      "inherits": "debug",
+      "targets": ["install_plugin"],
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
     }
   ],
   "testPresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "jobs": 0 }
+    },
+    {
       "name": "debug",
       "displayName": "Debug Tests",
-      "description": "Run pluginval validation against the Debug build",
+      "description": "Run the unit tests and pluginval against the Debug build",
+      "inherits": "base",
       "configurePreset": "debug",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "jobs": 0
-      }
+      "configuration": "Debug"
+    },
+    {
+      "name": "unit",
+      "displayName": "Unit Tests",
+      "description": "Run only the Catch2 unit tests against the Debug build (skips pluginval)",
+      "inherits": "debug",
+      "filter": { "include": { "name": "\\.unit\\." } }
     },
     {
       "name": "release",
       "displayName": "Release Tests",
-      "description": "Run pluginval validation against the Release build",
+      "description": "Run the unit tests and pluginval against the Release build",
+      "inherits": "base",
       "configurePreset": "release",
-      "output": {
-        "outputOnFailure": true
-      },
-      "execution": {
-        "noTestsAction": "error",
-        "jobs": 0
-      }
+      "configuration": "Release"
+    },
+    {
+      "name": "unit-release",
+      "displayName": "Unit Tests (Release)",
+      "description": "Run only the Catch2 unit tests against the Release build (skips pluginval)",
+      "inherits": "release",
+      "filter": { "include": { "name": "\\.unit\\." } }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "debug",
+      "displayName": "Build (Debug)",
+      "steps": [
+        { "type": "configure", "name": "debug" },
+        { "type": "build", "name": "debug" }
+      ]
+    },
+    {
+      "name": "release",
+      "displayName": "Build (Release)",
+      "steps": [
+        { "type": "configure", "name": "release" },
+        { "type": "build", "name": "release" }
+      ]
+    },
+    {
+      "name": "unit",
+      "displayName": "Unit Tests",
+      "steps": [
+        { "type": "configure", "name": "debug" },
+        { "type": "build", "name": "unit" },
+        { "type": "test", "name": "unit" }
+      ]
+    },
+    {
+      "name": "unit-release",
+      "displayName": "Unit Tests (Release)",
+      "steps": [
+        { "type": "configure", "name": "release" },
+        { "type": "build", "name": "unit-release" },
+        { "type": "test", "name": "unit-release" }
+      ]
+    },
+    {
+      "name": "test",
+      "displayName": "All Tests (Debug)",
+      "steps": [
+        { "type": "configure", "name": "debug" },
+        { "type": "build", "name": "test" },
+        { "type": "test", "name": "debug" }
+      ]
+    },
+    {
+      "name": "test-release",
+      "displayName": "All Tests (Release)",
+      "steps": [
+        { "type": "configure", "name": "release" },
+        { "type": "build", "name": "test-release" },
+        { "type": "test", "name": "release" }
+      ]
     }
   ]
 }

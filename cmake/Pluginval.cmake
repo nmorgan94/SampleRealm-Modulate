@@ -52,6 +52,12 @@ else()
 endif()
 
 function(add_pluginval_tests pluginTarget)
+    # Builds everything ctest runs; each kind of test adds itself. Exists even when disabled,
+    # so build presets can always name it
+    if(NOT TARGET all_tests)
+        add_custom_target(all_tests)
+    endif()
+
     if(NOT TARGET pluginval)
         if(ENABLE_PLUGINVAL)
             message(WARNING "add_pluginval_tests: pluginval target not available, skipping")
@@ -109,6 +115,8 @@ function(add_pluginval_tests pluginTarget)
     if(NOT builtTargets)
         message(WARNING "pluginval: no validatable formats for ${pluginTarget}, validate will fail")
     endif()
+
+    add_dependencies(all_tests pluginval ${builtTargets})
 
     # --no-tests=error so an empty or mistyped filter fails instead of exiting 0
     add_custom_target(${pluginTarget}_validate

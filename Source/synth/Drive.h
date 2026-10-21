@@ -17,7 +17,8 @@ public:
         oversampler = std::make_unique<juce::dsp::Oversampling<float>>(
             static_cast<size_t>(spec.numChannels), 1,
             juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR);
-        oversampler->initProcessing(static_cast<size_t>(spec.maximumBlockSize));
+        maxBlockSize = spec.maximumBlockSize;
+        oversampler->initProcessing(maxBlockSize);
         oversampler->reset();
         currentHQ = false;
     }
@@ -31,7 +32,7 @@ public:
 
     void process(juce::AudioBuffer<float>& buffer, bool hq)
     {
-        const bool useHQ = hq && oversampler != nullptr
+        const bool useHQ = hq && maxBlockSize > 0
                               && buffer.getNumChannels() == oversamplerChannels;
 
         if (useHQ != currentHQ)
@@ -48,9 +49,15 @@ public:
 
         if (useHQ)
         {
-            auto osBlock = oversampler->processSamplesUp (block);
-            shapeBlock (osBlock);
-            oversampler->processSamplesDown (block);
+            // The oversampler is sized for the prepared block, so a bigger host block goes in chunks
+            const auto numSamples = block.getNumSamples();
+            for (size_t start = 0; start < numSamples; start += maxBlockSize)
+            {
+                auto chunk = block.getSubBlock (start, juce::jmin (maxBlockSize, numSamples - start));
+                auto osBlock = oversampler->processSamplesUp (chunk);
+                shapeBlock (osBlock);
+                oversampler->processSamplesDown (chunk);
+            }
         }
         else
         {
@@ -81,7 +88,8 @@ private:
     bool  currentHQ = false;
 
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
-    int oversamplerChannels = 0;                   
+    int oversamplerChannels = 0;
+    size_t maxBlockSize = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Drive)
 };

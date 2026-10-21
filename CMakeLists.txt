@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "" FORCE)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "" FORCE)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
 
 # Change to your project name
@@ -33,6 +33,14 @@ CPMAddPackage(
     juce-framework/JUCE
 )
 
+# Windows' VST3 folder needs admin, so copying is opt-in there
+if(WIN32)
+    set(copyDefault OFF)
+else()
+    set(copyDefault ON)
+endif()
+option(PLUGIN_COPY_AFTER_BUILD "Copy the plugin into the system plug-in folders after building" ${copyDefault})
+
 juce_add_plugin(${PROJECT_NAME}
         COMPANY_NAME
           SampleRealm
@@ -49,7 +57,7 @@ juce_add_plugin(${PROJECT_NAME}
         JUCE_VST3_CAN_REPLACE_VST2
           FALSE
         COPY_PLUGIN_AFTER_BUILD
-          TRUE
+          ${PLUGIN_COPY_AFTER_BUILD}
         PLUGIN_MANUFACTURER_CODE
           Sprm
         PLUGIN_CODE
@@ -116,5 +124,25 @@ target_link_libraries(${PROJECT_NAME}
         juce::juce_recommended_warning_flags
 )
 
+# Launches the Standalone the same way on macOS and Windows
+add_custom_target(run
+    COMMAND $<TARGET_FILE:${PROJECT_NAME}_Standalone>
+    DEPENDS ${PROJECT_NAME}_Standalone
+    USES_TERMINAL)
+
+# Windows installs on demand, since its VST3 folder needs an administrator prompt
+if(WIN32)
+    get_target_property(vst3Artefact ${PROJECT_NAME}_VST3 JUCE_PLUGIN_ARTEFACT_FILE)
+    get_target_property(vst3CopyDir  ${PROJECT_NAME}_VST3 JUCE_PLUGIN_COPY_DIR)
+    add_custom_target(install_plugin
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${vst3Artefact}"
+                "${vst3CopyDir}/$<TARGET_PROPERTY:${PROJECT_NAME},JUCE_PRODUCT_NAME>.vst3"
+        DEPENDS ${PROJECT_NAME}_VST3
+        COMMENT "Installing VST3 into ${vst3CopyDir}")
+endif()
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Pluginval.cmake)
 add_pluginval_tests(${PROJECT_NAME})
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Tests.cmake)
+add_unit_tests(${PROJECT_NAME})

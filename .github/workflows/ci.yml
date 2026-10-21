@@ -1,0 +1,57 @@
+name: CI
+
+# Runs only when started by hand, from the Actions tab or `gh workflow run ci.yml`
+on:
+  workflow_dispatch:
+    inputs:
+      pluginval:
+        description: Also run pluginval
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+    steps:
+      - uses: actions/checkout@v7
+
+      # Keeps JUCE, pluginval and Catch2 between runs; any edit to the CMake files starts a fresh cache
+      - uses: actions/cache@v6
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/*.cmake') }}
+
+      - name: Build (Release)
+        run: cmake --workflow --preset release
+
+      - name: Tests (Release)
+        run: cmake --workflow --preset ${{ inputs.pluginval && 'test-release' || 'unit-release' }}
+
+      # tar keeps the bundles' file permissions, and is uploaded as-is rather than zipped
+      - name: Package plugins
+        shell: bash
+        run: |
+          project=$(sed -n 's/^CMAKE_PROJECT_NAME:STATIC=//p' build-release/CMakeCache.txt | tr -d '\r')
+          artefacts=build-release/${project}_artefacts/Release
+          mkdir package
+          cp -R "$artefacts"/VST3/*.vst3 package/
+          if [ "$RUNNER_OS" = macOS ]; then
+            cp -R "$artefacts"/AU/*.component package/
+          fi
+          tar -czf "$project-$RUNNER_OS.tar.gz" -C package .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: '*.tar.gz'
+          archive: false
+          retention-days: 30
+          if-no-files-found: error

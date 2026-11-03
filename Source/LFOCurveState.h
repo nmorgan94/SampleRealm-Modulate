@@ -1,22 +1,36 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "ui/CurveEditor.h"
+#include "dsp/ModulateSynth.h"
 
-class LFOCurveState
+class LFOCurveState : private juce::ValueTree::Listener
 {
 public:
     LFOCurveState() = default;
+
+    ~LFOCurveState() override
+    {
+        if (state.isValid())
+            state.removeListener(this);
+    }
     
     void initialise(juce::ValueTree treeState, juce::UndoManager* treeUndoManager)
     {
+        if (state.isValid())
+            state.removeListener(this);
+
         state = treeState;
         undoManager = treeUndoManager;
+
+        if (state.isValid())
+            state.addListener(this);
+
+        rebuildSnapshot();
     }
     
-    std::vector<CurveEditor::ControlPoint> getCurvePoints(size_t lfoIndex) const
+    std::vector<LfoCurve::Point> getCurvePoints(size_t lfoIndex) const
     {
-        std::vector<CurveEditor::ControlPoint> points;
+        std::vector<LfoCurve::Point> points;
         auto curveNode = findCurve(static_cast<int>(lfoIndex));
         
         if (! curveNode.isValid())
@@ -26,6 +40,10 @@ public:
         
         for (auto pointNode : curveNode)
         {
+            // All the DSP keeps
+            if (points.size() == LfoCurve::maxPoints)
+                break;
+
             if (pointNode.hasType(IDs::point))
             {
                 points.emplace_back(
@@ -38,22 +56,36 @@ public:
         return points;
     }
     
-    void setCurvePoints(size_t lfoIndex, const std::vector<CurveEditor::ControlPoint>& points)
+    void setCurvePoints(size_t lfoIndex, const std::vector<LfoCurve::Point>& points)
     {
         if (! state.isValid())
             return;
         
-        auto curveNode = findOrCreateCurve(static_cast<int>(lfoIndex));
-        
-        curveNode.removeAllChildren(undoManager);
-        
-        for (const auto& point : points)
         {
-            juce::ValueTree pointNode(IDs::point);
-            pointNode.setProperty(IDs::x, point.x, undoManager);
-            pointNode.setProperty(IDs::y, point.y, undoManager);
-            curveNode.addChild(pointNode, -1, undoManager);
+            // The audio thread sees the new curve whole, not point by point
+            const juce::ScopedValueSetter<bool> settingPoints(isSettingPoints, true);
+
+            auto curveNode = findOrCreateCurve(static_cast<int>(lfoIndex));
+
+            curveNode.removeAllChildren(undoManager);
+
+            for (const auto& point : std::span(points).first(std::min(points.size(), LfoCurve::maxPoints)))
+            {
+                juce::ValueTree pointNode(IDs::point);
+                pointNode.setProperty(IDs::x, point.x, undoManager);
+                pointNode.setProperty(IDs::y, point.y, undoManager);
+                curveNode.addChild(pointNode, -1, undoManager);
+            }
         }
+
+        rebuildSnapshot();
+    }
+
+    // Safe from the audio thread
+    ModulateSynth::Curves getCurves() const
+    {
+        const juce::SpinLock::ScopedLockType sl(snapshotLock);
+        return snapshot;
     }
 
 private:
@@ -92,9 +124,37 @@ private:
         state.addChild(curveNode, -1, undoManager);
         return curveNode;
     }
+
+    void rebuildSnapshot()
+    {
+        if (isSettingPoints)
+            return;
+
+        ModulateSynth::Curves curves {};
+
+        for (size_t i = 0; i < curves.size(); ++i)
+        {
+            const auto points = getCurvePoints(i);
+            auto& curve = curves[i];
+            curve.count = points.size();
+            std::ranges::copy(points, curve.points.begin());
+        }
+
+        const juce::SpinLock::ScopedLockType sl(snapshotLock);
+        snapshot = curves;
+    }
+
+    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier&) override { rebuildSnapshot(); }
+    void valueTreeChildAdded(juce::ValueTree&, juce::ValueTree&) override { rebuildSnapshot(); }
+    void valueTreeChildRemoved(juce::ValueTree&, juce::ValueTree&, int) override { rebuildSnapshot(); }
+    void valueTreeChildOrderChanged(juce::ValueTree&, int, int) override { rebuildSnapshot(); }
+    void valueTreeParentChanged(juce::ValueTree&) override { rebuildSnapshot(); }
     
     juce::ValueTree state;
     juce::UndoManager* undoManager = nullptr;
+    ModulateSynth::Curves snapshot {};
+    mutable juce::SpinLock snapshotLock;
+    bool isSettingPoints = false;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LFOCurveState)
 };

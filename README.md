@@ -64,7 +64,10 @@ Every command is the same on macOS and Windows, except the rows marked **macOS**
 | Build (Release) | `cmake --workflow --preset release` |
 | Run the unit tests | `cmake --workflow --preset unit` |
 | Run the unit tests and pluginval | `cmake --workflow --preset test` |
+| Run the unit tests against a Release build | `cmake --workflow --preset unit-release` |
 | Run all tests against a Release build | `cmake --workflow --preset test-release` |
+| Build the plugin with the WebView editor (Release) | `cmake --workflow --preset webview` |
+| Run all tests against the WebView editor build | `cmake --workflow --preset test-webview` |
 | Launch the Standalone app (Debug) | `cmake --build --preset run` |
 | Install the plugin: **macOS** | Automatic on every build |
 | Install the plugin: **Windows** | `cmake --build --preset install-windows`, from an administrator prompt |
@@ -91,6 +94,12 @@ defaults, bus layouts, state save/restore, and that the output stays finite acro
 settings. Run them with the `unit` workflow, or `test` to include pluginval (see
 [Commands](#commands)). Set `-DENABLE_UNIT_TESTS=OFF` to skip them.
 
+- `ParameterSnapshotTests.cpp` and `fixtures/session-0.0.1.xml` hold what saved sessions depend on.
+  Once a version ships, they don't change.
+- `fixtures/golden.json` holds renders of eleven patches, including every filter mode and slope with
+  and without drive, which `wasm/engine.test.mjs` checks too.
+  Re-record them only for an intended change of sound: `build-debug/Modulate_Tests "[.write-golden]"`.
+
 ## Validating the Plugin
 
 [pluginval](https://github.com/Tracktion/pluginval) loads the built plugin as a host would and
@@ -111,6 +120,22 @@ left on. Whichever configuration was built most recently is the one installed. S
 conformance validator is off by default, as it pulls ~300MB of SDK for one extra test; enable it
 with `-DPLUGINVAL_VST3_VALIDATOR=ON`.
 
+## Web Demo and WebView Editor
+
+Needs Emscripten (`brew install emscripten`) and Node 24+.
+
+| Task | Command |
+|---|---|
+| Build and test the demo | `cd wasm && cmake --workflow --preset wasm` |
+| Serve the demo with live reload at http://localhost:8099 | `cd webui && npm run serve` |
+| Build the plugin with the WebView editor | `cmake --workflow --preset webview` |
+
+- `Source/dsp/` and `Source/shared/` build for wasm: `juce_core` and `juce_audio_basics` only.
+- Upload `wasm/build-wasm/SampleRealm-Modulate-<version>/` to the asset bucket's `demos/`.
+  [`wasm.yml`](.github/workflows/wasm.yml) builds the same folder on GitHub as an artifact of that name.
+- The `webview` build installs over the native one; run the `release` workflow to switch back.
+- Delete `wasm/patches/juce-wasm.patch` once JUCE fixes its wasm support.
+
 ## CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the Release plugin on macOS and Windows
@@ -119,3 +144,6 @@ and runs the unit tests. Start it by hand from **Actions → CI → Run workflow
 
 Each run keeps the unsigned plugins under **Artifacts** for 30 days: `Modulate-macOS.tar.gz` (VST3
 and AU) and `Modulate-Windows.tar.gz` (VST3).
+
+[`.github/workflows/wasm.yml`](.github/workflows/wasm.yml) builds and tests the web demo, and keeps
+the demo folder as an artifact of the same name. Start it with `gh workflow run wasm.yml`.

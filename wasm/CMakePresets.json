@@ -1,0 +1,45 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "wasm",
+      "displayName": "WebAssembly",
+      "description": "Release build of the web demo's engine; needs Emscripten on the PATH",
+      "binaryDir": "${sourceDir}/build-wasm",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CPM_SOURCE_CACHE": "${sourceDir}/../.cpm-cache" }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "wasm",
+      "displayName": "WebAssembly Build",
+      "configurePreset": "wasm"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "wasm",
+      "displayName": "Engine Tests",
+      "description": "Play the built wasm under Node",
+      "configurePreset": "wasm",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "wasm",
+      "displayName": "Build and Test (WebAssembly)",
+      "steps": [
+        { "type": "configure", "name": "wasm" },
+        { "type": "build", "name": "wasm" },
+        { "type": "test", "name": "wasm" }
+      ]
+    }
+  ]
+}

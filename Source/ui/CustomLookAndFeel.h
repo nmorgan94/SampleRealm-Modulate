@@ -1,6 +1,5 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
-#include "BinaryData.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -17,21 +16,11 @@ public:
         setColour(juce::TooltipWindow::textColourId, juce::Colour(0xff00ff41));
     }
 
-    [[nodiscard]] static juce::FontOptions orbitronRegular()
-    {
-        static auto typeface = juce::Typeface::createSystemTypefaceFor(
-            BinaryData::OrbitronRegular_ttf,
-            BinaryData::OrbitronRegular_ttfSize);
-        return juce::FontOptions(typeface);
-    }
-    
-    [[nodiscard]] static juce::FontOptions orbitronBold()
-    {
-        static auto typeface = juce::Typeface::createSystemTypefaceFor(
-            BinaryData::OrbitronBold_ttf,
-            BinaryData::OrbitronBold_ttfSize);
-        return juce::FontOptions(typeface);
-    }
+    static constexpr float regularWeight = 400.0f;
+    static constexpr float boldWeight = 700.0f;
+
+    // From the one variable font
+    [[nodiscard]] static juce::FontOptions orbitron(float weight);
     
     void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
                          bool /*shouldDrawButtonAsHighlighted*/, bool /*shouldDrawButtonAsDown*/) override
@@ -49,7 +38,7 @@ public:
 
             // Draw text
             g.setColour(button.getToggleState() ? neonGreen : juce::Colour(0xff666666));
-            g.setFont(orbitronRegular().withHeight(10.0f));
+            g.setFont(orbitron(regularWeight).withHeight(10.0f));
             g.drawText(button.getButtonText(), bounds, juce::Justification::centred);
 
             return;
@@ -139,7 +128,7 @@ public:
         }
 
         g.setColour(colour);
-        g.setFont(orbitronRegular().withHeight(14.0f));
+        g.setFont(orbitron(regularWeight).withHeight(14.0f));
         
         auto r = area.reduced(10, 0);
         g.drawFittedText(text, r, juce::Justification::centredLeft, 1);
@@ -148,18 +137,18 @@ public:
     juce::Font getLabelFont(juce::Label& label) override
     {
         const auto existing = label.getFont();
-        const auto options  = existing.isBold() ? orbitronBold() : orbitronRegular();
+        const auto options  = orbitron(existing.isBold() ? boldWeight : regularWeight);
         return options.withHeight(existing.getHeight());
     }
 
     juce::Font getComboBoxFont(juce::ComboBox&) override
     {
-        return orbitronRegular().withHeight(14.0f);
+        return orbitron(regularWeight).withHeight(14.0f);
     }
 
     juce::Font getSliderPopupFont(juce::Slider&) override
     {
-        return orbitronRegular().withHeight(12.0f);
+        return orbitron(regularWeight).withHeight(12.0f);
     }
     
     juce::Label* createComboBoxTextBox(juce::ComboBox&) override
@@ -168,7 +157,7 @@ public:
         label->setJustificationType(juce::Justification::centredLeft);
         label->setColour(juce::Label::textColourId, juce::Colours::white);
         label->setColour(juce::Label::textWhenEditingColourId, juce::Colours::white);
-        label->setFont(orbitronRegular().withHeight(14.0f));
+        label->setFont(orbitron(regularWeight).withHeight(14.0f));
         return label;
     }
     
@@ -198,7 +187,7 @@ public:
         
         // Text
         g.setColour(button.getToggleState() ? neonGreen : juce::Colour(0xff666666));
-        g.setFont(orbitronBold().withHeight(14.0f));
+        g.setFont(orbitron(boldWeight).withHeight(14.0f));
         g.drawText(button.getButtonText(), bounds, juce::Justification::centred);
     }
     

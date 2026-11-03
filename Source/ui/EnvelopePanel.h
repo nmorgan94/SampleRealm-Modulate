@@ -31,17 +31,17 @@ public:
     {
         // Create envelope editor
         envelopeEditor = std::make_unique<EnvelopeEditor>();
-        envelopeEditor->setEnvelope(&processor.getEnvelope(static_cast<size_t>(envIndex)),
+        envelopeEditor->setEnvelope(&processor.getLive(),
                                     &processor.getModulationManager(), envIndex);
         addAndMakeVisible(envelopeEditor.get());
         
         // Create ADSR sliders
-        juce::String envPrefix = "env" + juce::String(envIndex + 1) + "_";
-        
-        setupSlider(attackSlider, attackLabel, "Attack", envPrefix + "attack");
-        setupSlider(decaySlider, decayLabel, "Decay", envPrefix + "decay");
-        setupSlider(sustainSlider, sustainLabel, "Sustain", envPrefix + "sustain");
-        setupSlider(releaseSlider, releaseLabel, "Release", envPrefix + "release");
+        const auto& specs = ParameterSpecs::env[static_cast<size_t>(envIndex)];
+
+        setupSlider(attackSlider, attackLabel, "Attack", specs.attack.id);
+        setupSlider(decaySlider, decayLabel, "Decay", specs.decay.id);
+        setupSlider(sustainSlider, sustainLabel, "Sustain", specs.sustain.id);
+        setupSlider(releaseSlider, releaseLabel, "Release", specs.release.id);
         
         // Initial update
         updateEnvelopeDisplay();

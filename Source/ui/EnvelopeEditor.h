@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "BaseCurveDisplay.h"
-#include "../synth/ADSREnvelope.h"
+#include "CustomLookAndFeel.h"
 #include "../ModulationManager.h"
 
 class EnvelopeEditor : public BaseCurveDisplay,
@@ -17,9 +17,9 @@ public:
         stopTimer();
     }
 
-    void setEnvelope(const ADSREnvelope* env, const ModulationManager* mod, int index)
+    void setEnvelope(const ModulateSynth::Live* liveState, const ModulationManager* mod, int index)
     {
-        envelope = env;
+        live = liveState;
         modManager = mod;
         envelopeIndex = index;
         updateTimerState();
@@ -32,7 +32,7 @@ public:
 
     void updateTimerState()
     {
-        if (isVisible() && envelope != nullptr)
+        if (isVisible() && live != nullptr)
             startTimerHz(60);
         else
             stopTimer();
@@ -92,7 +92,7 @@ protected:
     void drawLabels(juce::Graphics& g, const juce::Rectangle<float>& bounds) const override
     {
         g.setColour(juce::Colour(0xff00ff41).withAlpha(0.6f));
-        g.setFont(10.0f);
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::regularWeight).withHeight(10.0f));
 
         const auto stage = getStageBounds(bounds);
 
@@ -138,8 +138,8 @@ private:
 
     float getPlayheadX(const StageBounds& s) const
     {
-        const float p = envelope->getStageProgress();
-        switch (envelope->getState())
+        const float p = live->envelopeProgress[liveIndex()];
+        switch (live->envelopeStage[liveIndex()].load())
         {
             case ADSREnvelope::State::Attack:  return juce::jmap(p, s.startX,   s.attackX);
             case ADSREnvelope::State::Decay:   return juce::jmap(p, s.attackX,  s.decayX);
@@ -151,14 +151,16 @@ private:
 
     bool isPlayheadVisible() const
     {
-        if (envelope == nullptr || ! envelope->isActive())
+        if (live == nullptr || live->envelopeStage[liveIndex()] == ADSREnvelope::State::Idle)
             return false;
 
         return (envelopeIndex == 0)
-            || (modManager != nullptr && modManager->isEnvelopeAssigned(envelopeIndex));
+            || (modManager != nullptr && Modulation::isSourceAssigned(modManager->getAssignments(), Modulation::Source::Envelope, envelopeIndex));
     }
 
-    const ADSREnvelope* envelope = nullptr;
+    size_t liveIndex() const { return static_cast<size_t>(envelopeIndex); }
+
+    const ModulateSynth::Live* live = nullptr;
     const ModulationManager* modManager = nullptr;
     int envelopeIndex = -1;
     bool playheadWasVisible = false;

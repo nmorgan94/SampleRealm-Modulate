@@ -2,24 +2,18 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <atomic>
 #include <optional>
 #include "BaseCurveDisplay.h"
-
-class LFO;
+#include "../dsp/LfoCurve.h"
 
 class CurveEditor : public BaseCurveDisplay,
                     public juce::Timer
 {
 public:
-    struct ControlPoint
-    {
-        float x;
-        float y;
-        
-        ControlPoint(float xPos = 0.0f, float yPos = 0.5f) : x(xPos), y(yPos) {}
-    };
-    
-    CurveEditor() : lfo(nullptr), tension(0.5f)
+    using ControlPoint = LfoCurve::Point;
+
+    CurveEditor() : tension(0.5f)
     {
         controlPoints = defaultControlPoints();
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -27,13 +21,13 @@ public:
     
     ~CurveEditor() override
     {
-        if (lfo != nullptr)
-            stopTimer();
+        stopTimer();
     }
-    
-    void setLFO(LFO* lfoToVisualize)
+
+    // The LFO's phase, 0..1, for the playhead
+    void setPlayhead(const std::atomic<float>* phaseToShow)
     {
-        lfo = lfoToVisualize;
+        playheadPhase = phaseToShow;
         updateTimerState();
     }
     
@@ -44,7 +38,7 @@ public:
     
     void updateTimerState()
     {
-        if (isVisible() && lfo != nullptr)
+        if (isVisible() && playheadPhase != nullptr)
             startTimerHz(60);
         else
             stopTimer();
@@ -52,7 +46,7 @@ public:
     
     void timerCallback() override
     {
-        if (lfo != nullptr)
+        if (playheadPhase != nullptr)
             repaint();
     }
 
@@ -90,9 +84,9 @@ protected:
     
     void drawControlPoints(juce::Graphics& g, const juce::Rectangle<float>& bounds) const override
     {
-        if (lfo != nullptr)
+        if (playheadPhase != nullptr)
         {
-            float currentPhase = lfo->getCurrentPhase();
+            float currentPhase = playheadPhase->load();
             if (currentPhase >= 0.0f && currentPhase <= 1.0f)
             {
                 float playheadX = bounds.getX() + currentPhase * bounds.getWidth();
@@ -154,8 +148,7 @@ public:
                 else
                 {
                     // Add new point (if under limit)
-                    const size_t maxPoints = 32;
-                    if (controlPoints.size() < maxPoints)
+                    if (controlPoints.size() < LfoCurve::maxPoints)
                     {
                         auto bounds = getLocalBounds().toFloat();
                         float x = juce::jlimit(0.0f, 1.0f, (event.position.x - bounds.getX()) / bounds.getWidth());
@@ -225,71 +218,12 @@ public:
     // Get interpolated value at position x (0.0 to 1.0) using Catmull-Rom spline
     float getValueAt(float x) const
     {
-        return evaluate(controlPoints, tension, x);
+        return LfoCurve::evaluate(controlPoints, tension, x);
     }
 
-    // The editor's default sine-like curve. Shared so the processor can fall back to it when
-    // an LFO has no saved curve points.
     static std::vector<ControlPoint> defaultControlPoints()
     {
-        return {
-            ControlPoint(0.0f,  0.5f),
-            ControlPoint(0.25f, 1.0f),
-            ControlPoint(0.5f,  0.5f),
-            ControlPoint(0.75f, 0.0f),
-            ControlPoint(1.0f,  0.5f)
-        };
-    }
-
-    struct Shape
-    {
-        const char* name;
-        std::vector<ControlPoint> points;
-        float tension;
-    };
-
-    static const std::vector<Shape>& shapes()
-    {
-        static const std::vector<Shape> table = {
-            { "Sine",      defaultControlPoints(), 0.5f },
-            { "Triangle",  defaultControlPoints(), 1.0f },
-            { "Ramp Up",   { { 0.0f, 0.0f }, { 1.0f, 1.0f } }, 1.0f },
-            { "Ramp Down", { { 0.0f, 1.0f }, { 1.0f, 0.0f } }, 1.0f },
-            { "Square",    { { 0.0f, 1.0f }, { 0.49f, 1.0f },
-                             { 0.51f, 0.0f }, { 0.99f, 0.0f }, { 1.0f, 1.0f } }, 1.0f }
-        };
-
-        return table;
-    }
-
-    // UI-free evaluation of (control points + tension) at x in [0,1]. Used both for the editor's
-    // own rendering and by the processor to rebuild the audio LFO lookup table from saved state.
-    static float evaluate(const std::vector<ControlPoint>& points, float tension, float x)
-    {
-        x = juce::jlimit(0.0f, 1.0f, x);
-        if (points.size() < 2)
-            return 0.5f;
-
-        size_t segmentIndex = points.size() - 1;
-        for (size_t i = 0; i < points.size() - 1; ++i)
-        {
-            if (x <= points[i + 1].x)
-            {
-                segmentIndex = i;
-                break;
-            }
-        }
-
-        if (segmentIndex >= points.size() - 1)
-            return points.back().y;
-
-        const auto& startPoint  = points[segmentIndex];
-        const auto& endPoint    = points[segmentIndex + 1];
-        const auto& beforePoint = (segmentIndex > 0) ? points[segmentIndex - 1] : startPoint;
-        const auto& afterPoint  = (segmentIndex + 2 < points.size()) ? points[segmentIndex + 2] : endPoint;
-
-        const float t = (x - startPoint.x) / (endPoint.x - startPoint.x);
-        return catmullRom(beforePoint.y, startPoint.y, endPoint.y, afterPoint.y, t, tension);
+        return { LfoCurve::defaultPoints.begin(), LfoCurve::defaultPoints.end() };
     }
 
     const std::vector<ControlPoint>& getControlPoints() const { return controlPoints; }
@@ -318,24 +252,6 @@ public:
     void removeListener(Listener* listener) { listeners.remove(listener); }
 
 private:
-    // Catmull-Rom spline with tension control (static so the processor can reuse it).
-    static float catmullRom(float y0, float y1, float y2, float y3, float t, float tension)
-    {
-        float cardinalParam = (tension - 0.5f) * 2.0f;
-        float tensionScale = (1.0f - cardinalParam) * 0.5f;
-        float t2 = t * t;
-        float t3 = t2 * t;
-
-        float result = tensionScale * (
-            (2.0f * y1) +
-            (-y0 + y2) * t +
-            (2.0f * y0 - 5.0f * y1 + 4.0f * y2 - y3) * t2 +
-            (-y0 + 3.0f * y1 - 3.0f * y2 + y3) * t3
-        ) + cardinalParam * (y1 + (y2 - y1) * t);
-        
-        return juce::jlimit(0.0f, 1.0f, result);
-    }
-    
     std::optional<size_t> findNearestPoint(juce::Point<float> pos) const
     {
         auto bounds = getLocalBounds().toFloat();
@@ -368,7 +284,7 @@ private:
     std::optional<size_t> hoveredPointIndex;
     std::optional<size_t> draggedPointIndex;
     juce::ListenerList<Listener> listeners;
-    LFO* lfo;
+    const std::atomic<float>* playheadPhase = nullptr;
     float tension;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CurveEditor)

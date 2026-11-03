@@ -1,0 +1,26 @@
+/* CustomLookAndFeel's colours */
+@theme static {
+  --color-background: #000000;
+  --color-panel: #1a1a1a;
+  --color-widget: #2a2a2a;
+  --color-widget-border: #3a3a3a;
+  --color-display: #0a0a0a;
+  --color-accent: #00ff41;
+  --color-title: #00ff00;
+  --color-dim: #666666;
+  --color-fg: #ffffff;
+  --color-delete: #ff3b30;
+  --color-meter-low: #1ccad8;
+  --font-display: Orbitron, var(--font-sans);
+}
+
+@font-face {
+  font-family: Orbitron;
+  font-weight: 400 900;
+  src: url('../../Assets/OrbitronVariable.ttf') format('truetype');
+}
+
+body {
+  font-family: var(--font-display);
+  color: var(--color-fg);
+}

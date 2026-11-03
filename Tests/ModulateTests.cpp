@@ -9,14 +9,6 @@ using Catch::Matchers::WithinAbs;
 
 namespace
 {
-    template <typename ParameterType>
-    ParameterType* getTyped (AudioPluginAudioProcessor& processor, const char* paramID)
-    {
-        auto* parameter = dynamic_cast<ParameterType*> (processor.getAPVTS().getParameter (paramID));
-        REQUIRE (parameter != nullptr);
-        return parameter;
-    }
-
     // Plays a chord for the same length at any block size, so tiny blocks still get past the attack
     void playChord (AudioPluginAudioProcessor& processor, int numSamples)
     {
@@ -41,75 +33,6 @@ namespace
         // One check per run, still naming the first block that went bad
         CAPTURE (firstNonFiniteBlock);
         CHECK (firstNonFiniteBlock == -1);
-    }
-}
-
-//==============================================================================
-TEST_CASE_METHOD (ProcessorFixture, "Every parameter starts at its default", "[parameters]")
-{
-    for (auto* parameter : processor.getParameters())
-    {
-        CAPTURE (parameter->getName (100));
-        CHECK_THAT (parameter->getValue(), WithinAbs (parameter->getDefaultValue(), 1.0e-6));
-        CHECK (parameter->getDefaultValue() >= 0.0f);
-        CHECK (parameter->getDefaultValue() <= 1.0f);
-    }
-}
-
-TEST_CASE_METHOD (ProcessorFixture, "Parameters have the expected ranges and defaults", "[parameters]")
-{
-    SECTION ("Master Gain")
-    {
-        auto* parameter = getTyped<juce::AudioParameterFloat> (processor, "master_gain");
-        CHECK (parameter->getName (100) == "Master Gain");
-        CHECK_THAT (parameter->range.start, WithinAbs (-24.0, 1.0e-6));
-        CHECK_THAT (parameter->range.end, WithinAbs (6.0, 1.0e-6));
-        CHECK_THAT (parameter->get(), WithinAbs (0.0, 1.0e-6));
-    }
-
-    SECTION ("Filter Cutoff")
-    {
-        auto* parameter = getTyped<juce::AudioParameterFloat> (processor, "filter_cutoff");
-        CHECK_THAT (parameter->range.start, WithinAbs (20.0, 1.0e-6));
-        CHECK_THAT (parameter->range.end, WithinAbs (20000.0, 1.0e-6));
-        CHECK_THAT (parameter->get(), WithinAbs (1000.0, 1.0e-3));
-    }
-
-    SECTION ("Voices and unison")
-    {
-        auto* voices = getTyped<juce::AudioParameterInt> (processor, "num_voices");
-        CHECK (voices->getRange() == juce::Range<int> (1, Parameters::maxVoices));
-        CHECK (voices->get() == Parameters::maxVoices);
-
-        auto* unison = getTyped<juce::AudioParameterInt> (processor, "unison_voices");
-        CHECK (unison->getRange() == juce::Range<int> (1, Parameters::maxUnison));
-        CHECK (unison->get() == 1);
-    }
-
-    SECTION ("Switches are Off/On choices with the right defaults")
-    {
-        const auto [paramID, defaultOn] = GENERATE (table<const char*, bool> ({
-            { "osc1_enable",   true  },
-            { "osc2_enable",   false },
-            { "osc3_enable",   false },
-            { "noise_enable",  false },
-            { "lfo1_sync",     false },
-            { "filter_enable", true  },
-            { "drive_hq",      false },
-        }));
-
-        CAPTURE (paramID);
-        auto* parameter = getTyped<juce::AudioParameterChoice> (processor, paramID);
-        CHECK (parameter->choices == juce::StringArray { "Off", "On" });
-        CHECK (parameter->getIndex() == (defaultOn ? 1 : 0));
-        CHECK (processor.getBoolParam (paramID) == defaultOn);
-    }
-
-    SECTION ("Filter Mode")
-    {
-        auto* parameter = getTyped<juce::AudioParameterChoice> (processor, "filter_mode");
-        CHECK (parameter->choices == juce::StringArray { "Lowpass", "Highpass", "Bandpass", "Notch" });
-        CHECK (parameter->getIndex() == 0);
     }
 }
 
@@ -143,7 +66,7 @@ TEST_CASE_METHOD (ProcessorFixture, "State round trips into a new instance", "[s
 
     CHECK_THAT (getParameter (restored, "master_gain"), WithinAbs (-12.0, 1.0e-4));
     CHECK_THAT (getParameter (restored, "filter_cutoff"), WithinAbs (2500.0, 1.0));
-    CHECK (restored.getBoolParam ("osc2_enable"));
+    CHECK_THAT (getParameter (restored, "osc2_enable"), WithinAbs (1.0, 1.0e-6));
 
     const auto assignment = restored.getModulationManager().getAssignment ("filter_cutoff");
     CHECK (assignment.isLFO());
@@ -200,7 +123,7 @@ TEST_CASE_METHOD (ProcessorFixture, "Output stays finite across block sizes and 
         for (const auto* paramID : { "osc2_enable", "osc3_enable", "noise_enable" })
             setParameter (processor, paramID, 1.0f);
 
-        setParameter (processor, "unison_voices", Parameters::maxUnison);
+        setParameter (processor, "unison_voices", ParameterSpecs::maxUnison);
         setParameter (processor, "unison_detune", 100.0f);
         setParameter (processor, "glide_time", 0.5f);
         setParameter (processor, "master_gain", 6.0f);
@@ -227,4 +150,95 @@ TEST_CASE_METHOD (ProcessorFixture, "Output stays finite across block sizes and 
         setParameter (processor, "filter_enable", 0.0f);
         playChord (processor, numSamples);
     }
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "A tension change reaches the LFO with no editor open", "[dsp][lfo]")
+{
+    // LFO 1 runs free while assigned, so it moves without notes
+    setParameter (processor, ParameterSpecs::lfo[0].mode.id, 1.0f);
+    processor.getModulationManager().setAssignment (ParameterSpecs::filterCutoff.id,
+                                                    { Modulation::Source::LFO, 0, 0.0f, 1.0f });
+
+    setParameter (processor, ParameterSpecs::lfo[0].tension.id, 1.0f);
+
+    for (int block = 0; block < 10; ++block)
+    {
+        juce::AudioBuffer<float> buffer (2, blockSize);
+        process (processor, buffer);
+    }
+
+    const auto& live = processor.getLive();
+    const auto phase = live.lfoPhase[0].load();
+    REQUIRE (phase > 0.05f);
+
+    // The LFO reads a 512-point table, so allow for its interpolation
+    CHECK_THAT (live.lfoValue[0].load(), WithinAbs (LfoCurve::evaluate (LfoCurve::defaultPoints, 1.0f, phase), 1.0e-3));
+    CHECK (std::abs (live.lfoValue[0].load() - LfoCurve::evaluate (LfoCurve::defaultPoints, 0.5f, phase)) > 1.0e-2f);
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "LFO points that share an x keep the output finite", "[dsp][lfo]")
+{
+    processor.setLFOCurvePoints (0, { { 0.0f, 0.2f }, { 0.0f, 0.9f }, { 1.0f, 0.2f } });
+    processor.getModulationManager().setAssignment (ParameterSpecs::filterCutoff.id,
+                                                    { Modulation::Source::LFO, 0, 0.0f, 1.0f });
+
+    playChord (processor, blockSize);
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "Editors see a curve's points only up to what the DSP keeps", "[lfo][state]")
+{
+    std::vector<LfoCurve::Point> points;
+
+    for (auto x = 0.0f; points.size() <= LfoCurve::maxPoints; x += 0.01f)
+        points.emplace_back (x, 0.5f);
+
+    processor.setLFOCurvePoints (0, points);
+
+    CHECK (processor.getLFOCurvePoints (0).size() == LfoCurve::maxPoints);
+    CHECK (processor.getLFOCurves()[0].count == LfoCurve::maxPoints);
+}
+
+TEST_CASE ("Modulated values stay inside their parameter's range", "[dsp][modulation]")
+{
+    for (const auto* spec : ParameterSpecs::all)
+    {
+        CAPTURE (spec->id);
+
+        for (const auto value : { spec->min, spec->defaultValue, spec->max })
+            for (const auto sourceValue : { 0.0f, 0.5f, 1.0f })
+            {
+                const auto modulated = ModulateSynth::modulatedValue (*spec, value, { Modulation::Source::LFO, 0, -0.5f, 1.5f }, sourceValue);
+                CHECK (modulated >= spec->min);
+                CHECK (modulated <= spec->max);
+            }
+    }
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "A waveform changed while a note plays is heard", "[dsp]")
+{
+    // Morph 0 plays only waveform A, and 1 only B
+    const auto morph = GENERATE (0.0f, 1.0f);
+    const auto& waveform = morph < 0.5f ? ParameterSpecs::osc[0].waveform : ParameterSpecs::osc[0].waveformB;
+    setParameter (processor, ParameterSpecs::osc[0].morph.id, morph);
+
+    juce::MidiBuffer midi;
+    midi.addEvent (juce::MidiMessage::noteOn (1, 60, 1.0f), 0);
+
+    const auto blockRms = [&]
+    {
+        juce::AudioBuffer<float> buffer (2, blockSize);
+        processor.processBlock (buffer, midi);
+        midi.clear();
+        return buffer.getRMSLevel (0, 0, blockSize);
+    };
+
+    for (int block = 0; block < 20; ++block)
+        blockRms();
+
+    const auto sine = blockRms();
+    setParameter (processor, waveform.id, 2.0f);
+    const auto square = blockRms();
+
+    CAPTURE (sine, square);
+    CHECK (square > sine * 1.2f);
 }

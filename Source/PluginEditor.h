@@ -16,6 +16,8 @@ class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
                                                public juce::DragAndDropContainer
 {
 public:
+    static constexpr int width = 900, height = 600;
+
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
     ~AudioPluginAudioProcessorEditor() override;
 

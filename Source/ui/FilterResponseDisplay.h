@@ -1,7 +1,8 @@
 #pragma once
 
 #include "BaseCurveDisplay.h"
-#include "../synth/Filter.h"
+#include "CustomLookAndFeel.h"
+#include "../dsp/Filter.h"
 #include <cmath>
 
 class FilterResponseDisplay : public BaseCurveDisplay
@@ -9,7 +10,7 @@ class FilterResponseDisplay : public BaseCurveDisplay
 public:
     FilterResponseDisplay() : BaseCurveDisplay(false)
     {
-        responseFilter.prepare({ sampleRate, 512, 2 });
+        responseFilter.prepare(sampleRate);
     }
     
     void setFilterParameters(FilterMode mode, FilterSlope slope, float cutoffHz, float resonance, double sr)
@@ -20,7 +21,7 @@ public:
         if (! juce::approximatelyEqual(sr, sampleRate))
         {
             sampleRate = sr;
-            responseFilter.prepare({ sampleRate, 512, 2 });
+            responseFilter.prepare(sampleRate);
         }
 
         responseFilter.setParameters(mode, slope, cutoffHz, resonance);
@@ -86,7 +87,7 @@ protected:
     {
         auto labelColor = isEnabled ? juce::Colour(0xff666666) : juce::Colour(0xff3a3a3a);
         g.setColour(labelColor);
-        g.setFont(10.0f);
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::regularWeight).withHeight(10.0f));
         
         const float labelY = bounds.getBottom() - 12.0f;
         g.drawText("20", juce::Rectangle<float>(bounds.getX(), labelY, 30.0f, 12.0f), juce::Justification::left, false);

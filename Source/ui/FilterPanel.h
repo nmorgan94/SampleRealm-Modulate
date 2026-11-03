@@ -16,9 +16,9 @@ public:
     FilterPanel(AudioPluginAudioProcessor& proc,
                 juce::AudioProcessorValueTreeState& apvts)
         : processor(proc),
-          driveSlider(proc, "drive"),
-          cutoffSlider(proc, "filter_cutoff"),
-          resonanceSlider(proc, "filter_resonance")
+          driveSlider(proc, ParameterSpecs::drive.id),
+          cutoffSlider(proc, ParameterSpecs::filterCutoff.id),
+          resonanceSlider(proc, ParameterSpecs::filterResonance.id)
     {
         titleLabel.setText("FILTER", juce::dontSendNotification);
         titleLabel.setJustificationType(juce::Justification::centredLeft);
@@ -32,15 +32,11 @@ public:
         modeLabel.setJustificationType(juce::Justification::centredLeft);
         addAndMakeVisible(modeLabel);
         
-        modeSelector.addItem("Lowpass", 1);
-        modeSelector.addItem("Highpass", 2);
-        modeSelector.addItem("Bandpass", 3);
-        modeSelector.addItem("Notch", 4);
+        addChoices(modeSelector, ParameterSpecs::filterMode);
         modeSelector.addListener(this);
         addAndMakeVisible(modeSelector);
 
-        slopeSelector.addItem("12 dB", 1);
-        slopeSelector.addItem("24 dB", 2);
+        addChoices(slopeSelector, ParameterSpecs::filterSlope);
         addAndMakeVisible(slopeSelector);
 
         setupKnob(cutoffLabel, cutoffSlider, "Cutoff");
@@ -52,19 +48,19 @@ public:
         addAndMakeVisible(hqButton);
 
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-            apvts, "filter_enable", enableButton);
+            apvts, ParameterSpecs::filterEnable.id, enableButton);
         modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-            apvts, "filter_mode", modeSelector);
+            apvts, ParameterSpecs::filterMode.id, modeSelector);
         slopeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-            apvts, "filter_slope", slopeSelector);
+            apvts, ParameterSpecs::filterSlope.id, slopeSelector);
         cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, "filter_cutoff", cutoffSlider);
+            apvts, ParameterSpecs::filterCutoff.id, cutoffSlider);
         resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, "filter_resonance", resonanceSlider);
+            apvts, ParameterSpecs::filterResonance.id, resonanceSlider);
         driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, "drive", driveSlider);
+            apvts, ParameterSpecs::drive.id, driveSlider);
         hqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-            apvts, "drive_hq", hqButton);
+            apvts, ParameterSpecs::driveHq.id, hqButton);
 
         addAndMakeVisible(responseDisplay);
 
@@ -80,7 +76,7 @@ public:
     
     void visibilityChanged() override
     {
-        if (isVisible() && processor.getBoolParam("filter_enable"))
+        if (isVisible() && enableButton.getToggleState())
             startTimerHz(30);
         else
             stopTimer();
@@ -94,10 +90,10 @@ public:
     void updateResponseDisplay()
     {
         bool isEnabled = enableButton.getToggleState();
-        auto mode = static_cast<FilterMode>(processor.getChoiceParam("filter_mode"));
-        auto slope = static_cast<FilterSlope>(processor.getChoiceParam("filter_slope"));
-        float cutoff = processor.getModulatedParam("filter_cutoff");
-        float resonance = processor.getModulatedParam("filter_resonance");
+        auto mode = static_cast<FilterMode>(modeSelector.getSelectedItemIndex());
+        auto slope = static_cast<FilterSlope>(slopeSelector.getSelectedItemIndex());
+        float cutoff = processor.getModulatedParam(ParameterSpecs::filterCutoff.id);
+        float resonance = processor.getModulatedParam(ParameterSpecs::filterResonance.id);
 
         responseDisplay.setEnabled(isEnabled);
         responseDisplay.setFilterParameters(mode, slope, cutoff, resonance, processor.getSampleRate());

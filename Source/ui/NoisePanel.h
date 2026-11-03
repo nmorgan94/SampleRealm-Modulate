@@ -12,7 +12,7 @@ class NoisePanel : public juce::Component,
 public:
     NoisePanel(AudioPluginAudioProcessor& proc,
                juce::AudioProcessorValueTreeState& apvts)
-        : levelSlider(proc, "noise_level")
+        : levelSlider(proc, ParameterSpecs::noiseLevel.id)
     {
         titleLabel.setText("NOISE", juce::dontSendNotification);
         titleLabel.setJustificationType(juce::Justification::centredLeft);
@@ -22,8 +22,7 @@ public:
         enableButton.addListener(this);
         addAndMakeVisible(enableButton);
 
-        typeSelector.addItem("White", 1);
-        typeSelector.addItem("Pink", 2);
+        addChoices(typeSelector, ParameterSpecs::noiseType);
         addAndMakeVisible(typeSelector);
 
         levelSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -31,11 +30,11 @@ public:
         addAndMakeVisible(levelSlider);
 
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-            apvts, "noise_enable", enableButton);
+            apvts, ParameterSpecs::noiseEnable.id, enableButton);
         typeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-            apvts, "noise_type", typeSelector);
+            apvts, ParameterSpecs::noiseType.id, typeSelector);
         levelAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, "noise_level", levelSlider);
+            apvts, ParameterSpecs::noiseLevel.id, levelSlider);
 
         updateEnabledAppearance();
     }

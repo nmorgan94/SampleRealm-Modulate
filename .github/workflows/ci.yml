@@ -19,7 +19,6 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     env:
-      CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
       CMAKE_BUILD_PARALLEL_LEVEL: 4
     steps:
       - uses: actions/checkout@v7

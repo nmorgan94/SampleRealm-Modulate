@@ -4,7 +4,9 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ModulatableSlider.h"
 #include "StepperDisplay.h"
-#include "../synth/WavetableGenerator.h"
+#include "ComboChoices.h"
+#include "../shared/ParameterSpecs.h"
+#include "../dsp/WavetableGenerator.h"
 
 // Forward declaration
 class AudioPluginAudioProcessor;
@@ -16,22 +18,16 @@ class Oscillator : public juce::Component,
 public:
     Oscillator(AudioPluginAudioProcessor& proc,
                juce::AudioProcessorValueTreeState& apvts,
-               const juce::String& enableParamID,
-               const juce::String& waveformParamID,
-               const juce::String& waveformBParamID,
-               const juce::String& morphParamID,
-               const juce::String& gainParamID,
-               const juce::String& pitchParamID,
-               const juce::String& fineParamID,
+               const ParameterSpecs::Oscillator& specs,
                const juce::String& labelText)
         : processorRef(proc),
           apvtsRef(apvts),
-          waveformAID(waveformParamID),
-          waveformBID(waveformBParamID),
-          morphID(morphParamID),
-          pitchParamIDStr(pitchParamID),
-          gainSlider(proc, gainParamID),
-          morphSlider(proc, morphParamID)
+          waveformAID(specs.waveform.id),
+          waveformBID(specs.waveformB.id),
+          morphID(specs.morph.id),
+          pitchParamIDStr(specs.pitch.id),
+          gainSlider(proc, specs.gain.id),
+          morphSlider(proc, specs.morph.id)
     {
         displaySourceA.setSize(1, WavetableGenerator::getWavetableSize());
         displaySourceB.setSize(1, WavetableGenerator::getWavetableSize());
@@ -43,12 +39,8 @@ public:
         enableButton.addListener(this);
         addAndMakeVisible(enableButton);
         
-        auto waveformNames = WavetableGenerator::getWaveformNames();
-        for (int i = 0; i < waveformNames.size(); ++i)
-        {
-            waveformSelector.addItem(waveformNames[i], i + 1);
-            waveformSelectorB.addItem(waveformNames[i], i + 1);
-        }
+        addChoices(waveformSelector, specs.waveform);
+        addChoices(waveformSelectorB, specs.waveformB);
         addAndMakeVisible(waveformSelector);
         addAndMakeVisible(waveformSelectorB);
 
@@ -56,22 +48,22 @@ public:
         addAndMakeVisible(morphSlider);
 
         addAndMakeVisible(semitoneDisplay);
-        semitoneDisplay.attachToParameter(proc, apvts, pitchParamID);
+        semitoneDisplay.attachToParameter(proc, apvts, specs.pitch.id);
 
         fineDisplay.setLabel("FIN");
         addAndMakeVisible(fineDisplay);
-        fineDisplay.attachToParameter(proc, apvts, fineParamID);
+        fineDisplay.attachToParameter(proc, apvts, specs.fine.id);
 
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-            apvts, enableParamID, enableButton);
+            apvts, specs.enable.id, enableButton);
         waveformAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-            apvts, waveformParamID, waveformSelector);
+            apvts, specs.waveform.id, waveformSelector);
         waveformBAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-            apvts, waveformBParamID, waveformSelectorB);
+            apvts, specs.waveformB.id, waveformSelectorB);
         gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, gainParamID, gainSlider);
+            apvts, specs.gain.id, gainSlider);
         morphAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, morphParamID, morphSlider);
+            apvts, specs.morph.id, morphSlider);
 
     }
     

@@ -41,7 +41,14 @@ else()
 endif()
 option(PLUGIN_COPY_AFTER_BUILD "Copy the plugin into the system plug-in folders after building" ${copyDefault})
 
+option(PLUGIN_WEBVIEW_EDITOR "Use the WebView editor from webui/ instead of the native one" OFF)
+
+if(PLUGIN_WEBVIEW_EDITOR)
+    set(webViewPluginOptions NEEDS_WEB_BROWSER TRUE NEEDS_WEBVIEW2 TRUE)
+endif()
+
 juce_add_plugin(${PROJECT_NAME}
+        ${webViewPluginOptions}
         COMPANY_NAME
           SampleRealm
         IS_SYNTH
@@ -78,6 +85,10 @@ file(GLOB_RECURSE SourceFiles
     "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.h"
 )
 
+if(NOT PLUGIN_WEBVIEW_EDITOR)
+    list(FILTER SourceFiles EXCLUDE REGEX "/Source/webview/")
+endif()
+
 # How we want our SourceFiles to appear in our IDE
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SourceFiles})
 
@@ -87,10 +98,51 @@ target_sources(${PROJECT_NAME} PRIVATE ${SourceFiles})
 # These are some toggleable options from the JUCE CMake API
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
-        JUCE_WEB_BROWSER=0
+        JUCE_WEB_BROWSER=$<BOOL:${PLUGIN_WEBVIEW_EDITOR}>
+        PLUGIN_WEBVIEW_EDITOR=$<BOOL:${PLUGIN_WEBVIEW_EDITOR}>
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
 )
+
+if(PLUGIN_WEBVIEW_EDITOR)
+    find_program(NPM_EXECUTABLE npm REQUIRED)
+
+    set(uiDir "${CMAKE_CURRENT_SOURCE_DIR}/webui")
+    set(webUiZip "${CMAKE_CURRENT_BINARY_DIR}/WebUI.zip")
+
+    file(GLOB_RECURSE uiInputs CONFIGURE_DEPENDS
+        "${uiDir}/src/*" "${uiDir}/package*.json" "${uiDir}/vite.config.ts" "${CMAKE_CURRENT_SOURCE_DIR}/Assets/*.ttf")
+    list(FILTER uiInputs EXCLUDE REGEX "/src/demo/")
+
+    # npm writes this on every install
+    set(npmInstalled "${uiDir}/node_modules/.package-lock.json")
+
+    add_custom_command(OUTPUT "${npmInstalled}"
+        COMMAND ${NPM_EXECUTABLE} ci --no-audit --no-fund
+        WORKING_DIRECTORY "${uiDir}"
+        DEPENDS "${uiDir}/package.json" "${uiDir}/package-lock.json"
+        VERBATIM)
+
+    add_custom_command(OUTPUT "${webUiZip}"
+        COMMAND ${NPM_EXECUTABLE} run typecheck
+        COMMAND ${NPM_EXECUTABLE} run build:plugin
+        COMMAND ${CMAKE_COMMAND} -E chdir "${uiDir}/dist/plugin"
+                ${CMAKE_COMMAND} -E tar cf "${webUiZip}" --format=zip .
+        WORKING_DIRECTORY "${uiDir}"
+        DEPENDS ${uiInputs} "${npmInstalled}"
+        VERBATIM)
+
+    juce_add_binary_data(${PROJECT_NAME}_WebUI
+        HEADER_NAME "WebUIData.h"
+        NAMESPACE WebUIData
+        SOURCES "${webUiZip}")
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_WebUI)
+
+    if(APPLE)
+        set_source_files_properties(Source/webview/WebViewEditor.cpp PROPERTIES COMPILE_OPTIONS -xobjective-c++)
+    endif()
+endif()
 
 # Binary assets (images, fonts, etc.)
 # Automatically find all files in Assets directory
@@ -117,7 +169,6 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         ${ASSET_TARGET}  # Only links if assets exist
         juce::juce_audio_utils
-        juce::juce_dsp
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags

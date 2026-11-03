@@ -148,3 +148,4 @@ node_modules/
 # Core dumps
 core
 core.*
+.cpm-cache/

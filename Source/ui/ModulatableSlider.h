@@ -2,6 +2,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "CustomLookAndFeel.h"
 #include "ValueLabelSlider.h"
 
 // Forward declaration
@@ -125,7 +126,7 @@ public:
                 float normalizedBase = param->getNormalisableRange().convertTo0to1(static_cast<float>(getValue()));
 
                 auto assignment = processor.getModulationManager().getAssignment(parameterID);
-                ModulationManager::applyDepthChange(assignment, normalizedBase, delta);
+                Modulation::applyDepthChange(assignment, normalizedBase, delta);
                 processor.getModulationManager().setAssignment(parameterID, assignment);
 
                 repaint();
@@ -182,7 +183,7 @@ private:
             float normalizedBase = param->getNormalisableRange().convertTo0to1(static_cast<float>(getValue()));
 
             auto assignment = processor.getModulationManager().getAssignment(parameterID);
-            ModulationManager::applyDepthChange(assignment, normalizedBase, 0.0f);
+            Modulation::applyDepthChange(assignment, normalizedBase, 0.0f);
             processor.getModulationManager().setAssignment(parameterID, assignment);
         }
     }
@@ -192,10 +193,10 @@ private:
         if (auto* param = getParameter())
         {
             float normalizedBase = param->getNormalisableRange().convertTo0to1(static_cast<float>(getValue()));
-            auto type = isLFO ? ModulationManager::ModulationSource::LFO
-                              : ModulationManager::ModulationSource::Envelope;
+            auto type = isLFO ? Modulation::Source::LFO
+                              : Modulation::Source::Envelope;
             processor.getModulationManager().setAssignment(parameterID,
-                ModulationManager::makeDefaultRange(type, index, normalizedBase));
+                Modulation::makeDefaultRange(type, index, normalizedBase));
         }
 
         setAssignedSource(isLFO, index);
@@ -253,7 +254,7 @@ private:
         g.setColour(juce::Colour(0xff2a2a2a));
         g.fillRoundedRectangle(indicator, 2.0f);
         g.setColour(modulationColor);
-        g.setFont(9.0f);
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::regularWeight).withHeight(9.0f));
         g.drawText((assignedIsLFO ? "L" : "E") + juce::String(assignedSourceIndex + 1),
                   indicator, juce::Justification::centred);
     }

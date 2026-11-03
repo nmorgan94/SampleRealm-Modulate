@@ -11,7 +11,8 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build-${presetName}",
       "cacheVariables": {
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CPM_SOURCE_CACHE": "${sourceDir}/.cpm-cache"
       }
     },
     {
@@ -27,6 +28,13 @@
       "description": "Release build with optimizations",
       "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "webview",
+      "displayName": "Release with the WebView editor",
+      "description": "Release build using webui/'s WebView editor, to try it; not for shipping",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "PLUGIN_WEBVIEW_EDITOR": "ON" }
     },
     {
       "name": "xcode",
@@ -48,6 +56,12 @@
       "name": "release",
       "displayName": "Release Build",
       "configurePreset": "release",
+      "configuration": "Release"
+    },
+    {
+      "name": "webview",
+      "displayName": "WebView Editor Build",
+      "configurePreset": "webview",
       "configuration": "Release"
     },
     {
@@ -77,6 +91,13 @@
       "description": "Build the Catch2 unit tests against the Release plugin code",
       "inherits": "release",
       "targets": ["unit_tests"]
+    },
+    {
+      "name": "test-webview",
+      "displayName": "All Tests Build (WebView editor)",
+      "description": "Build the WebView editor plugin, pluginval and the unit tests",
+      "inherits": "webview",
+      "targets": ["all_tests"]
     },
     {
       "name": "run",
@@ -130,6 +151,14 @@
       "description": "Run only the Catch2 unit tests against the Release build (skips pluginval)",
       "inherits": "release",
       "filter": { "include": { "name": "\\.unit\\." } }
+    },
+    {
+      "name": "webview",
+      "displayName": "WebView Editor Tests",
+      "description": "Run the unit tests and pluginval against the WebView editor build",
+      "inherits": "base",
+      "configurePreset": "webview",
+      "configuration": "Release"
     }
   ],
   "workflowPresets": [
@@ -147,6 +176,14 @@
       "steps": [
         { "type": "configure", "name": "release" },
         { "type": "build", "name": "release" }
+      ]
+    },
+    {
+      "name": "webview",
+      "displayName": "Build with the WebView editor (Release)",
+      "steps": [
+        { "type": "configure", "name": "webview" },
+        { "type": "build", "name": "webview" }
       ]
     },
     {
@@ -183,6 +220,15 @@
         { "type": "configure", "name": "release" },
         { "type": "build", "name": "test-release" },
         { "type": "test", "name": "release" }
+      ]
+    },
+    {
+      "name": "test-webview",
+      "displayName": "All Tests (WebView editor)",
+      "steps": [
+        { "type": "configure", "name": "webview" },
+        { "type": "build", "name": "test-webview" },
+        { "type": "test", "name": "webview" }
       ]
     }
   ]

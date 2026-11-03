@@ -2,18 +2,22 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "../PluginProcessor.h"
-#include "CustomLookAndFeel.h"
+#include "../dsp/PeakMeter.h"
+#include "../shared/ParameterSpecs.h"
+#include "MeterBallistics.h"
 #include "ValueLabelSlider.h"
 
 class OutputMeter : public juce::Component,
                     private juce::Timer
 {
 public:
-    explicit OutputMeter(AudioPluginAudioProcessor& processorToUse)
-        : processor(processorToUse)
+    explicit OutputMeter(PeakMeter& source)
+        : meter(source)
     {
-        startTimerHz(30);
+        // Drop anything played while no meter was showing
+        meter.reset();
+
+        startTimerHz(MeterBallistics::updateHz);
     }
 
     void paint(juce::Graphics& g) override
@@ -29,19 +33,28 @@ public:
         auto leftMeter = juce::Rectangle<float>(startX, meterBounds.getY(), channelWidth, meterBounds.getHeight());
         auto rightMeter = juce::Rectangle<float>(leftMeter.getRight() + gap, meterBounds.getY(), channelWidth, meterBounds.getHeight());
 
-        drawChannel(g, leftMeter, processor.getOutputMeterLevel(0), processor.isOutputClipping(0));
-        drawChannel(g, rightMeter, processor.getOutputMeterLevel(1), processor.isOutputClipping(1));
+        drawChannel(g, leftMeter, bars[0]);
+        drawChannel(g, rightMeter, bars[1]);
     }
 
 private:
     void timerCallback() override
     {
-        repaint();
+        bool changed = false;
+
+        for (int channel = 0; channel < PeakMeter::maxChannels; ++channel)
+        {
+            const auto peak = meter.readAndReset(channel);
+            changed |= bars[static_cast<size_t>(channel)].update(peak);
+        }
+
+        if (changed)
+            repaint();
     }
 
-    static void drawChannel(juce::Graphics& g, juce::Rectangle<float> area, float level, bool isClipping)
+    static void drawChannel(juce::Graphics& g, juce::Rectangle<float> area, const MeterBallistics& bar)
     {
-        level = juce::jlimit(0.0f, 1.0f, level);
+        const auto level = bar.fraction();
 
         g.setColour(juce::Colour(0xff050505));
         g.fillRect(area);
@@ -59,7 +72,7 @@ private:
             g.fillRect(filled);
         }
 
-        if (isClipping)
+        if (bar.isClipping())
         {
             auto clipIndicator = area.withHeight(3.0f);
             g.setColour(juce::Colours::red);
@@ -67,7 +80,8 @@ private:
         }
     }
 
-    AudioPluginAudioProcessor& processor;
+    PeakMeter& meter;
+    std::array<MeterBallistics, PeakMeter::maxChannels> bars;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OutputMeter)
 };
@@ -75,10 +89,10 @@ private:
 class MasterMeter : public juce::Component
 {
 public:
-    MasterMeter(AudioPluginAudioProcessor& processorToUse,
+    MasterMeter(PeakMeter& outputMeter,
                 juce::AudioProcessorValueTreeState& apvts)
         : gainSlider(),
-          meter(processorToUse)
+          meter(outputMeter)
     {
         gainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         gainSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
@@ -87,7 +101,7 @@ public:
         addAndMakeVisible(meter);
 
         gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, "master_gain", gainSlider);
+            apvts, ParameterSpecs::masterGain.id, gainSlider);
     }
 
     void paint(juce::Graphics& g) override

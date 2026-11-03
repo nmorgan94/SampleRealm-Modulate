@@ -21,18 +21,15 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     setLookAndFeel(&customLookAndFeel);
     
     osc1 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, "osc1_enable", "osc1_waveform", "osc1_waveform_b", "osc1_morph",
-        "osc1_gain", "osc1_pitch", "osc1_fine", "OSC 1");
+        processorRef, processorRef.apvts, ParameterSpecs::osc[0], "OSC 1");
     addAndMakeVisible(osc1.get());
 
     osc2 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, "osc2_enable", "osc2_waveform", "osc2_waveform_b", "osc2_morph",
-        "osc2_gain", "osc2_pitch", "osc2_fine", "OSC 2");
+        processorRef, processorRef.apvts, ParameterSpecs::osc[1], "OSC 2");
     addAndMakeVisible(osc2.get());
 
     osc3 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, "osc3_enable", "osc3_waveform", "osc3_waveform_b", "osc3_morph",
-        "osc3_gain", "osc3_pitch", "osc3_fine", "OSC 3");
+        processorRef, processorRef.apvts, ParameterSpecs::osc[2], "OSC 3");
     addAndMakeVisible(osc3.get());
     
     noisePanel = std::make_unique<NoisePanel>(processorRef, processorRef.apvts);
@@ -50,14 +47,14 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     lfoPanel = std::make_unique<LFOPanel>(processorRef);
     addAndMakeVisible(lfoPanel.get());
     
-    masterMeter = std::make_unique<MasterMeter>(processorRef, processorRef.apvts);
+    masterMeter = std::make_unique<MasterMeter>(processorRef.getOutputMeter(), processorRef.apvts);
     addAndMakeVisible(masterMeter.get());
 
     presetBar = std::make_unique<PresetBar>(processorRef);
     presetBar->onPresetLoaded = [this]() { refreshAfterPresetLoad(); };
     addAndMakeVisible(presetBar.get());
 
-    setSize (900, 600);
+    setSize (width, height);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -75,13 +72,13 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
                          .withWidth(titleWidth);
 
     g.setColour (juce::Colour(0xff00ff00));
-    g.setFont (CustomLookAndFeel::orbitronBold().withHeight(titleHeight));
+    g.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight(titleHeight));
     g.drawFittedText ("SampleRealm: MODULATE", titleArea, juce::Justification::centredLeft, 1);
 
     auto versionArea = titleArea.removeFromBottom(versionHeight).translated(0, versionGap);
 
     g.setColour (juce::Colour(0xff00ff41).withAlpha(0.4f));
-    g.setFont (CustomLookAndFeel::orbitronRegular().withPointHeight(9.0f));
+    g.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::regularWeight).withPointHeight(9.0f));
     g.drawText ("v" + juce::String (JucePlugin_VersionString), versionArea,
                 juce::Justification::centredLeft);
 }

@@ -1,0 +1,31 @@
+name: Web demo
+
+on:
+  workflow_dispatch:
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and test
+        id: build
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install 6.0.13
+          "$RUNNER_TEMP/emsdk/emsdk" activate 6.0.13
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          cd wasm
+          cmake --workflow --preset wasm
+          echo "folder=$(cat build-wasm/demo-folder)" >> "$GITHUB_OUTPUT"
+
+      # The zip holds the folder's files, so the artifact carries its name
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.build.outputs.folder }}
+          path: wasm/build-wasm/${{ steps.build.outputs.folder }}/
+          retention-days: 30
+          if-no-files-found: error

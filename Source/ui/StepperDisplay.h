@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../ModulationManager.h"
+#include "CustomLookAndFeel.h"
 
 class AudioPluginAudioProcessor;
 
@@ -31,11 +32,11 @@ public:
         auto labelBounds = bounds.removeFromLeft(bounds.getWidth() / 2);
 
         g.setColour(juce::Colours::grey);
-        g.setFont(juce::FontOptions(10.0f, juce::Font::bold));
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::boldWeight).withHeight(10.0f));
         g.drawText(labelText, labelBounds, juce::Justification::centred);
 
         g.setColour(juce::Colours::white);
-        g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::boldWeight).withHeight(12.0f));
         juce::String valueText = (showSign && value >= 0 ? "+" : "") + juce::String(value);
         g.drawText(valueText, bounds, juce::Justification::centred);
 
@@ -90,7 +91,7 @@ public:
             float delta = -dragDistance * 0.003f;
 
             auto assignment = getModulationManager().getAssignment(parameterID);
-            ModulationManager::applyDepthChange(assignment, normalizedBase(), delta);
+            Modulation::applyDepthChange(assignment, normalizedBase(), delta);
             applyRange(assignment);
             repaint();
             return;
@@ -262,7 +263,7 @@ private:
         repaint();
     }
 
-    void applyRange(const ModulationManager::ModulationAssignment& assignment)
+    void applyRange(const Modulation::Assignment& assignment)
     {
         getModulationManager().setAssignment(parameterID, assignment);
     }
@@ -273,7 +274,7 @@ private:
             return;
 
         auto assignment = getModulationManager().getAssignment(parameterID);
-        ModulationManager::applyDepthChange(assignment, normalizedBase(), 0.0f);
+        Modulation::applyDepthChange(assignment, normalizedBase(), 0.0f);
         applyRange(assignment);
     }
 
@@ -281,9 +282,9 @@ private:
     {
         if (processor != nullptr && getParameter() != nullptr)
         {
-            auto type = isLFO ? ModulationManager::ModulationSource::LFO
-                              : ModulationManager::ModulationSource::Envelope;
-            applyRange(ModulationManager::makeDefaultRange(type, index, normalizedBase()));
+            auto type = isLFO ? Modulation::Source::LFO
+                              : Modulation::Source::Envelope;
+            applyRange(Modulation::makeDefaultRange(type, index, normalizedBase()));
         }
 
         setAssignedSource(isLFO, index);
@@ -359,7 +360,7 @@ private:
         g.setColour(juce::Colour(0xff2a2a2a));
         g.fillRoundedRectangle(indicator, 2.0f);
         g.setColour(modulationColor);
-        g.setFont(9.0f);
+        g.setFont(CustomLookAndFeel::orbitron(CustomLookAndFeel::regularWeight).withHeight(9.0f));
         g.drawText((assignedIsLFO ? "L" : "E") + juce::String(assignedSourceIndex + 1),
                    indicator, juce::Justification::centred);
     }

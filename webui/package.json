@@ -1,0 +1,30 @@
+{
+  "name": "modulate-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SampleRealm: Modulate's editor UI: built for the plugin's WebView editor and for samplerealm.com's playable demo",
+  "scripts": {
+    "build": "npm run typecheck && npm run build:plugin && npm run build:demo",
+    "build:plugin": "vite build --mode plugin",
+    "build:demo": "vite build --mode demo",
+    "serve": "vite --mode demo",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'test/**/*.test.ts'"
+  },
+  "dependencies": {
+    "@juce-framework/webview": "1.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.6.5",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  }
+}

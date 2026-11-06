@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "PluginProcessor.h"
+#include "PluginEditor.h"
 
 //==============================================================================
 namespace TestHelpers
@@ -87,5 +87,14 @@ namespace TestHelpers
         // Parameters notify listeners on the message thread, so JUCE must be initialised
         juce::ScopedJuceInitialiser_GUI juceInitialiser;
         AudioPluginAudioProcessor processor;
+    };
+
+    // A parent the editor's size, for overlays
+    struct OverlayFixture
+    {
+        OverlayFixture()   { parent.setSize (AudioPluginAudioProcessorEditor::width, AudioPluginAudioProcessorEditor::height); }
+
+        juce::ScopedJuceInitialiser_GUI juceInitialiser;
+        juce::Component parent;
     };
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_gui_basics/juce_gui_basics.h>
+#include "ModalOverlay.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -14,6 +15,20 @@ public:
         setColour(juce::BubbleComponent::backgroundColourId, juce::Colour(0xff2a2a2a));
         setColour(juce::BubbleComponent::outlineColourId, juce::Colour(0xff00ff41));
         setColour(juce::TooltipWindow::textColourId, juce::Colour(0xff00ff41));
+
+        setColour(ModalOverlay::dimColourId, juce::Colours::black.withAlpha(0.6f));
+        setColour(ModalOverlay::panelColourId, juce::Colour(0xff1a1a1a));
+        setColour(ModalOverlay::outlineColourId, juce::Colour(0xff00ff41));
+
+        setColour(juce::TextEditor::backgroundColourId, juce::Colours::black);
+        setColour(juce::TextEditor::textColourId, juce::Colours::white);
+        setColour(juce::TextEditor::outlineColourId, juce::Colour(0xff3a3a3a));
+        setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xff00ff41));
+        setColour(juce::TextEditor::highlightColourId, juce::Colour(0xff00ff41).withAlpha(0.3f));
+        setColour(juce::TextEditor::highlightedTextColourId, juce::Colours::white);
+        setColour(juce::CaretComponent::caretColourId, juce::Colour(0xff00ff41));
+
+        setColour(juce::ScrollBar::thumbColourId, juce::Colour(0xff3a3a3a));
     }
 
     static constexpr float regularWeight = 400.0f;
@@ -111,27 +126,87 @@ public:
     }
     
     void drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
-                          bool /*isSeparator*/, bool isActive, bool isHighlighted, bool /*isTicked*/,
-                          bool /*hasSubMenu*/, const juce::String& text,
+                          bool isSeparator, bool isActive, bool isHighlighted, bool isTicked,
+                          bool hasSubMenu, const juce::String& text,
                           const juce::String& /*shortcutKeyText*/,
-                          const juce::Drawable* /*icon*/, const juce::Colour* textColour) override
+                          const juce::Drawable* /*icon*/, const juce::Colour* /*textColour*/) override
     {
-        // Items added via addColouredItem carry their own colour; the rest default to white.
-        const bool hasOwnColour = textColour != nullptr && ! textColour->isTransparent();
-        auto colour = hasOwnColour ? *textColour : juce::Colours::white;
+        if (isSeparator)
+        {
+            g.setColour(juce::Colour(0xff3a3a3a));
+            g.fillRect(area.withSizeKeepingCentre(area.getWidth() - 16, 1));
+            return;
+        }
 
-        if (isHighlighted && isActive)
+        // Ticked items, such as the current preset, are green instead of ticked
+        auto colour = isTicked ? juce::Colour(0xff00ff41) : juce::Colours::white;
+
+        if (! isActive)
+        {
+            colour = juce::Colour(0xff666666);
+        }
+        else if (isHighlighted)
         {
             g.setColour(juce::Colour(0xff00ff41).withAlpha(0.2f));
             g.fillRect(area);
-            colour = hasOwnColour ? colour.brighter(0.4f) : juce::Colour(0xff00ff41);
+            colour = juce::Colour(0xff00ff41);
+        }
+
+        auto r = area.reduced(10, 0);
+
+        if (hasSubMenu)
+        {
+            const auto arrowArea = r.removeFromRight(8).toFloat().withSizeKeepingCentre(6.0f, 8.0f);
+            juce::Path arrow;
+            arrow.addTriangle(arrowArea.getTopLeft(), arrowArea.getBottomLeft(),
+                              { arrowArea.getRight(), arrowArea.getCentreY() });
+            g.setColour(juce::Colour(0xff00ff41));
+            g.fillPath(arrow);
         }
 
         g.setColour(colour);
         g.setFont(orbitron(regularWeight).withHeight(14.0f));
-        
-        auto r = area.reduced(10, 0);
         g.drawFittedText(text, r, juce::Justification::centredLeft, 1);
+    }
+
+    void drawPopupMenuSectionHeader(juce::Graphics& g, const juce::Rectangle<int>& area,
+                                    const juce::String& sectionName) override
+    {
+        g.setColour(juce::Colour(0xff00ff41));
+        g.setFont(orbitron(boldWeight).withHeight(14.0f));
+        g.drawFittedText(sectionName, area.reduced(10, 0), juce::Justification::centredLeft, 1);
+    }
+
+    void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour&,
+                              bool isHighlighted, bool isDown) override
+    {
+        const auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
+
+        g.setColour(juce::Colour(0xff2a2a2a));
+        g.fillRoundedRectangle(bounds, 4.0f);
+
+        g.setColour((isHighlighted || isDown) && button.isEnabled() ? juce::Colour(0xff00ff41) : juce::Colour(0xff3a3a3a));
+        g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
+    }
+
+    void drawButtonText(juce::Graphics& g, juce::TextButton& button, bool isHighlighted, bool isDown) override
+    {
+        auto colour = juce::Colours::white;
+
+        if (! button.isEnabled())
+            colour = juce::Colour(0xff666666);
+        else if (isHighlighted || isDown)
+            colour = juce::Colour(0xff00ff41);
+
+        g.setColour(colour);
+        g.setFont(getTextButtonFont(button, button.getHeight()));
+        g.drawFittedText(button.getButtonText(), button.getLocalBounds().reduced(4, 0),
+                         juce::Justification::centred, 1);
+    }
+
+    juce::Font getTextButtonFont(juce::TextButton&, int) override
+    {
+        return orbitron(regularWeight).withHeight(14.0f);
     }
     
     juce::Font getLabelFont(juce::Label& label) override

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Glass Pad" category="Pad" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="1.2"/>
+    <PARAM id="env1_decay" value="1.0"/>
+    <PARAM id="env1_release" value="2.5"/>
+    <PARAM id="env1_sustain" value="0.8"/>
+    <PARAM id="filter_cutoff" value="3000.0"/>
+    <PARAM id="filter_resonance" value="0.1"/>
+    <PARAM id="lfo1_mode" value="1.0"/>
+    <PARAM id="lfo1_rate" value="0.12"/>
+    <PARAM id="master_gain" value="-9.5"/>
+    <PARAM id="osc1_gain" value="0.6"/>
+    <PARAM id="osc1_morph" value="0.4"/>
+    <PARAM id="osc1_waveform" value="9.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_fine" value="6.0"/>
+    <PARAM id="osc2_gain" value="0.35"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="3.0"/>
+    <PARAM id="osc2_waveform_b" value="3.0"/>
+    <PARAM id="unison_detune" value="12.0"/>
+    <PARAM id="unison_spread" value="80.0"/>
+    <PARAM id="unison_voices" value="3.0"/>
+    <ModMatrix>
+      <Assignment parameterID="osc1_morph" sourceType="1" sourceIndex="0" minValue="0.1" maxValue="0.7"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

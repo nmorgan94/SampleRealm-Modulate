@@ -15,7 +15,14 @@ export interface ParamInfo {
 
 export interface UiInfo {
   version: string;
+  commit: string;
+  build: 'Debug' | 'Release';
   params: ParamInfo[];
+}
+
+export interface About extends Pick<UiInfo, 'version' | 'commit' | 'build'> {
+  // "VST3 in Ableton Live", or where else the editor is running
+  running: string;
 }
 
 // Linear peak per channel since the last level
@@ -60,17 +67,42 @@ export interface Live {
   envelopeStage: EnvelopeStage[];
 }
 
-// Mirrors Source/PresetManager.h: the user's presets by name, and the current one, or '' after Init.
-// Loading INIT_PRESET resets everything
-export interface Presets {
-  list(): Promise<{ names: string[]; current: string }>;
-  load(name: string): Promise<boolean>;
-  save(name: string): Promise<boolean>;
-  remove(name: string): Promise<boolean>;
+export interface PresetEntry {
+  name: string;
+  category: string;
+  isFactory: boolean;
 }
+
+export interface PresetStatus {
+  current: PresetEntry;
+  modified: boolean;
+}
+
+// Mirrors Source/presets/PresetManager.h
+export interface PresetBackend {
+  status(): PresetStatus;
+  onStatus(listener: (status: PresetStatus) => void): () => void;
+  // Factory then user presets, rescanning the user ones
+  list(): Promise<PresetEntry[]>;
+  load(preset: PresetEntry): Promise<void>;
+  loadInit(): Promise<void>;
+  loadNext(): Promise<void>;
+  loadPrevious(): Promise<void>;
+  exists(name: string): Promise<boolean>;
+  // Each resolves to an error message, or null
+  save(name: string, category: string): Promise<string | null>;
+  rename(preset: PresetEntry, newName: string): Promise<string | null>;
+  remove(preset: PresetEntry): Promise<string | null>;
+  // Only where presets are files
+  showFolder?(): void;
+}
+
+export const isSamePreset = (a: PresetEntry, b: PresetEntry) => a.name === b.name && a.isFactory === b.isFactory;
 
 export interface ModulateBackend {
   info: UiInfo;
+  about: About;
+  presets: PresetBackend;
   param(id: string): ParamInfo;
   // Real values, not 0..1
   getValue(id: string): number;
@@ -88,7 +120,6 @@ export interface ModulateBackend {
   onCurve(listener: (lfo: number) => void): () => void;
   onLevel(listener: (level: Level) => void): () => void;
   onLive(listener: (live: Live) => void): () => void;
-  presets: Presets;
 }
 
 export const paramLookup = <T>(entries: Map<string, T>) => (id: string) => {
@@ -107,8 +138,6 @@ export const listenerSet = <Args extends unknown[]>() => {
     notify: (...args: Args) => listeners.forEach((listener) => listener(...args)),
   };
 };
-
-export const INIT_PRESET = 'Init';
 
 export const NUM_LFOS = 4;
 export const NUM_ENVELOPES = 4;

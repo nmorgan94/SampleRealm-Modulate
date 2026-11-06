@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../PluginProcessor.h"
-#include "../PresetManager.h"
 
 //==============================================================================
 class WebViewEditor final : public juce::AudioProcessorEditor,
@@ -18,10 +17,10 @@ private:
     void sendStateIfChanged();
 
     juce::WebBrowserComponent::Options createOptions();
+    juce::WebBrowserComponent::Options withPresetFunctions (const juce::WebBrowserComponent::Options&);
     std::optional<juce::WebBrowserComponent::Resource> getResource (const juce::String& url);
 
     AudioPluginAudioProcessor& processorRef;
-    PresetManager presets { processorRef };
 
     // Declaration order matters: relays, browser, attachments
     std::vector<std::unique_ptr<juce::WebSliderRelay>> relays;
@@ -35,6 +34,7 @@ private:
     ModulateSynth::Assignments sentModulation {};
     ModulateSynth::Curves sentCurves {};
     bool lastSilent = false;
+    juce::uint32 lastPresetChange = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebViewEditor)
 };

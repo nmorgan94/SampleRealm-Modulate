@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { Keyboard } from './Keyboard.tsx';
 import { qwertySemitone } from './qwerty.ts';
 import { EDITOR_HEIGHT, EDITOR_WIDTH, ModulateEditor } from '../ModulateEditor.tsx';
-import { loadEngine, workletBackend, type WorkletBackend } from './workletBackend.ts';
+import { factoryPresets } from './factoryPresets.ts';
+import { browserStorage, loadEngine, workletBackend, type WorkletBackend } from './workletBackend.ts';
 import './styles.css';
 
 const ENGINE_URL = 'engine.wasm';
@@ -81,7 +82,7 @@ function Demo() {
 
   useEffect(() => {
     loadEngine(ENGINE_URL)
-      .then(({ wasm, info }) => setEngine({ backend: workletBackend(info), wasm }))
+      .then(({ wasm, info }) => setEngine({ backend: workletBackend(info, factoryPresets, browserStorage()), wasm }))
       .catch((error) => {
         console.error('Demo engine failed to load:', error);
         setStatus('failed');

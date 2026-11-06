@@ -6,9 +6,11 @@
 #include "ModulationManager.h"
 #include "Parameters.h"
 #include "LFOCurveState.h"
+#include "presets/PresetManager.h"
 
 //==============================================================================
-class AudioPluginAudioProcessor final : public juce::AudioProcessor
+class AudioPluginAudioProcessor final : public juce::AudioProcessor,
+                                         private juce::ValueTree::Listener
 {
 public:
     //==============================================================================
@@ -47,17 +49,12 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Shared save/restore primitives, reused by both the DAW state path above and
-    // the preset system. getStateTree() is the full tree (params + ModMatrix + LFOCurves);
-    // applyStateTree() swaps it in and re-points the modulation/LFO-curve managers.
-    juce::ValueTree getStateTree();
-    bool applyStateTree(const juce::ValueTree& newState);  // false if newState wasn't a valid state tree
+    PresetManager& getPresetManager() { return presetManager; }
 
-    // Resets all parameters to their defaults and clears modulation routing / LFO curves.
-    // Backs the "Init" preset.
-    void resetToDefaultState();
-    juce::String getCurrentPresetName() const;
-    void setCurrentPresetName(const juce::String& name);
+    static PresetManager::Config createPresetConfig();
+
+    // Moves each time the state is replaced: a preset, Init or a session
+    juce::uint32 getStateChanges() const noexcept { return stateChanges.load(); }
 
     //==============================================================================
     // The value the voices last heard, modulation included. For the editor
@@ -91,22 +88,26 @@ public:
 private:
     static inline const juce::Identifier modMatrixStateID { "ModMatrix" };
     static inline const juce::Identifier lfoCurvesStateID { "LFOCurves" };
-    static inline const juce::Identifier presetNameID    { "currentPreset" };
     //==============================================================================
     juce::UndoManager undoManager;
     ModulationManager modulationManager;
     LFOCurveState lfoCurveState;
+    PresetManager presetManager { apvts, createPresetConfig() };
     ModulateSynth synth;
     PeakMeter outputMeter { 2 };
 
     // The host's, kept from the last block that had one
     ModulateSynth::Tempo tempo;
+
+    std::atomic<juce::uint32> stateChanges { 0 };
     
     static juce::ValueTree getOrCreateStateChild(juce::ValueTree parent, const juce::Identifier& childID);
 
     // Points the modulation/LFO-curve managers at their state children. Shared by the
     // constructor and every state-restore path.
     void reinitialiseStateManagers();
+
+    void valueTreeRedirected (juce::ValueTree&) override;
 
     ModulateSynth::Settings currentSettings() const;
 

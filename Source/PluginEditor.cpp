@@ -2,24 +2,14 @@
 #include "PluginEditor.h"
 #include "ui/ModulatableSlider.h"
 
-namespace
-{
-    constexpr int topBarHeight   = 70;
-    constexpr int edgeMargin     = 10;
-    constexpr int titleWidth     = 550;
-    constexpr int meterWidth     = 90;
-    constexpr int presetBarWidth = 180;
-    constexpr float titleHeight  = 52.0f;
-    constexpr int versionHeight  = 12;
-    constexpr int versionGap     = 2;
-}
-
 //==============================================================================
 AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor& p)
     : AudioProcessorEditor (&p), processorRef (p)
 {
     setLookAndFeel(&customLookAndFeel);
-    
+
+    addAndMakeVisible(header);
+
     osc1 = std::make_unique<Oscillator>(
         processorRef, processorRef.apvts, ParameterSpecs::osc[0], "OSC 1");
     addAndMakeVisible(osc1.get());
@@ -47,14 +37,12 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     lfoPanel = std::make_unique<LFOPanel>(processorRef);
     addAndMakeVisible(lfoPanel.get());
     
-    masterMeter = std::make_unique<MasterMeter>(processorRef.getOutputMeter(), processorRef.apvts);
-    addAndMakeVisible(masterMeter.get());
-
-    presetBar = std::make_unique<PresetBar>(processorRef);
-    presetBar->onPresetLoaded = [this]() { refreshAfterPresetLoad(); };
-    addAndMakeVisible(presetBar.get());
+    prompt.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::regularWeight).withHeight (14.0f));
+    addChildComponent(prompt);
+    addChildComponent(manual);
 
     setSize (width, height);
+    startTimerHz (10);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -66,36 +54,13 @@ AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
 void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colours::black);
-    
-    auto titleArea = getLocalBounds().removeFromTop(topBarHeight)
-                         .withTrimmedLeft(edgeMargin)
-                         .withWidth(titleWidth);
-
-    g.setColour (juce::Colour(0xff00ff00));
-    g.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight(titleHeight));
-    g.drawFittedText ("SampleRealm: MODULATE", titleArea, juce::Justification::centredLeft, 1);
-
-    auto versionArea = titleArea.removeFromBottom(versionHeight).translated(0, versionGap);
-
-    g.setColour (juce::Colour(0xff00ff41).withAlpha(0.4f));
-    g.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::regularWeight).withPointHeight(9.0f));
-    g.drawText ("v" + juce::String (JucePlugin_VersionString), versionArea,
-                juce::Justification::centredLeft);
 }
 
 void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
     
-    auto topBar = bounds.removeFromTop(topBarHeight);
-    topBar.removeFromRight(edgeMargin);
-    if (masterMeter != nullptr)
-        masterMeter->setBounds(topBar.removeFromRight(meterWidth).reduced(0, 6));
-
-    topBar.removeFromLeft(edgeMargin + titleWidth);
-    if (presetBar != nullptr)
-        presetBar->setBounds(topBar.withSizeKeepingCentre(presetBarWidth, topBar.getHeight())
-                                   .reduced(0, 20));
+    header.setBounds(bounds.removeFromTop(HeaderBar::height));
     
     // Padding
     bounds.reduce(10, 5);
@@ -152,7 +117,16 @@ namespace
     }
 }
 
-void AudioPluginAudioProcessorEditor::refreshAfterPresetLoad()
+void AudioPluginAudioProcessorEditor::timerCallback()
+{
+    if (const auto change = processorRef.getStateChanges(); change != lastStateChange)
+    {
+        lastStateChange = change;
+        refreshAfterStateChange();
+    }
+}
+
+void AudioPluginAudioProcessorEditor::refreshAfterStateChange()
 {
     // APVTS-attached knobs/menus follow the new parameter values automatically. The two UI
     // caches that don't are the modulation badges and the drawn LFO curves - refresh those.

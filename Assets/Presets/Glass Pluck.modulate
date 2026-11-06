@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Glass Pluck" category="Pluck" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.001"/>
+    <PARAM id="env1_decay" value="0.6"/>
+    <PARAM id="env1_release" value="0.5"/>
+    <PARAM id="env1_sustain" value="0.0"/>
+    <PARAM id="env2_attack" value="0.001"/>
+    <PARAM id="env2_decay" value="0.3"/>
+    <PARAM id="env2_sustain" value="0.0"/>
+    <PARAM id="filter_cutoff" value="500.0"/>
+    <PARAM id="filter_resonance" value="0.25"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="master_gain" value="-6.5"/>
+    <PARAM id="osc1_gain" value="0.6"/>
+    <PARAM id="osc1_waveform" value="3.0"/>
+    <PARAM id="osc1_waveform_b" value="3.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.35"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="9.0"/>
+    <PARAM id="osc2_waveform_b" value="9.0"/>
+    <PARAM id="unison_detune" value="8.0"/>
+    <PARAM id="unison_spread" value="70.0"/>
+    <PARAM id="unison_voices" value="2.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="2" sourceIndex="1" minValue="0.3267" maxValue="0.6964"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

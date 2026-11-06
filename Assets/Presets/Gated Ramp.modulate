@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Gated Ramp" category="FX" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.002"/>
+    <PARAM id="env1_release" value="0.2"/>
+    <PARAM id="env1_sustain" value="1.0"/>
+    <PARAM id="filter_cutoff" value="1632.0"/>
+    <PARAM id="filter_resonance" value="0.15"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="lfo1_sync" value="1.0"/>
+    <PARAM id="lfo1_sync_rate" value="0.0"/>
+    <PARAM id="lfo1_tension" value="1.0"/>
+    <PARAM id="master_gain" value="-14.5"/>
+    <PARAM id="osc1_gain" value="0.6"/>
+    <PARAM id="osc1_waveform" value="8.0"/>
+    <PARAM id="osc1_waveform_b" value="8.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.3"/>
+    <PARAM id="osc2_pitch" value="-12.0"/>
+    <PARAM id="osc2_waveform" value="2.0"/>
+    <PARAM id="osc2_waveform_b" value="2.0"/>
+    <PARAM id="unison_detune" value="20.0"/>
+    <PARAM id="unison_voices" value="3.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="1" sourceIndex="0" minValue="0.2434" maxValue="0.6964"/>
+    </ModMatrix>
+    <LFOCurves>
+      <LFOCurve index="0">
+        <Point x="0.0" y="0.0"/>
+        <Point x="0.1" y="1.0"/>
+        <Point x="0.4" y="1.0"/>
+        <Point x="0.6" y="0.0"/>
+        <Point x="1.0" y="0.0"/>
+      </LFOCurve>
+    </LFOCurves>
+  </Parameters>
+</PRESET>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Wobble Bass" category="Bass" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="drive" value="0.3"/>
+    <PARAM id="drive_hq" value="1.0"/>
+    <PARAM id="env1_attack" value="0.003"/>
+    <PARAM id="env1_decay" value="0.3"/>
+    <PARAM id="env1_release" value="0.1"/>
+    <PARAM id="env1_sustain" value="0.9"/>
+    <PARAM id="filter_cutoff" value="743.0"/>
+    <PARAM id="filter_resonance" value="0.35"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="glide_time" value="0.03"/>
+    <PARAM id="lfo1_sync" value="1.0"/>
+    <PARAM id="lfo1_sync_rate" value="3.0"/>
+    <PARAM id="master_gain" value="-12.5"/>
+    <PARAM id="num_voices" value="1.0"/>
+    <PARAM id="osc1_pitch" value="-12.0"/>
+    <PARAM id="osc1_waveform" value="13.0"/>
+    <PARAM id="osc1_waveform_b" value="13.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.5"/>
+    <PARAM id="osc2_pitch" value="-24.0"/>
+    <PARAM id="osc2_waveform" value="2.0"/>
+    <PARAM id="osc2_waveform_b" value="2.0"/>
+    <PARAM id="unison_detune" value="10.0"/>
+    <PARAM id="unison_spread" value="40.0"/>
+    <PARAM id="unison_voices" value="3.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="1" sourceIndex="0" minValue="0.2041" maxValue="0.5348"/>
+    </ModMatrix>
+    <LFOCurves>
+      <LFOCurve index="0">
+        <Point x="0.0" y="0.0"/>
+        <Point x="0.15" y="1.0"/>
+        <Point x="0.5" y="0.35"/>
+        <Point x="1.0" y="0.0"/>
+      </LFOCurve>
+    </LFOCurves>
+  </Parameters>
+</PRESET>

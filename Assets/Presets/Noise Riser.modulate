@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Noise Riser" category="FX" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.5"/>
+    <PARAM id="env1_release" value="1.5"/>
+    <PARAM id="env1_sustain" value="1.0"/>
+    <PARAM id="env2_attack" value="4.0"/>
+    <PARAM id="env2_release" value="1.5"/>
+    <PARAM id="env2_sustain" value="1.0"/>
+    <PARAM id="filter_cutoff" value="200.0"/>
+    <PARAM id="filter_mode" value="2.0"/>
+    <PARAM id="filter_resonance" value="0.15"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="master_gain" value="2.0"/>
+    <PARAM id="noise_enable" value="1.0"/>
+    <PARAM id="noise_level" value="1.0"/>
+    <PARAM id="osc1_enable" value="0.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="2" sourceIndex="1" minValue="0.2434" maxValue="0.7593"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

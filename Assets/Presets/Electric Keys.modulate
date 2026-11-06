@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Electric Keys" category="Keys" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.002"/>
+    <PARAM id="env1_decay" value="2.0"/>
+    <PARAM id="env1_release" value="0.4"/>
+    <PARAM id="env1_sustain" value="0.25"/>
+    <PARAM id="env2_attack" value="0.001"/>
+    <PARAM id="env2_decay" value="0.8"/>
+    <PARAM id="env2_release" value="0.4"/>
+    <PARAM id="env2_sustain" value="0.0"/>
+    <PARAM id="filter_cutoff" value="5000.0"/>
+    <PARAM id="filter_resonance" value="0.01"/>
+    <PARAM id="lfo1_mode" value="1.0"/>
+    <PARAM id="lfo1_rate" value="4.5"/>
+    <PARAM id="master_gain" value="-9.5"/>
+    <PARAM id="osc1_gain" value="0.63"/>
+    <PARAM id="osc1_waveform_b" value="9.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.15"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="0.0"/>
+    <PARAM id="osc2_waveform_b" value="0.0"/>
+    <ModMatrix>
+      <Assignment parameterID="osc1_morph" sourceType="2" sourceIndex="1" minValue="0.0" maxValue="0.6"/>
+      <Assignment parameterID="osc1_gain" sourceType="1" sourceIndex="0" minValue="0.55" maxValue="0.7"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

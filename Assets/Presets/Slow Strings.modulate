@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Slow Strings" category="Pad" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.8"/>
+    <PARAM id="env1_decay" value="1.0"/>
+    <PARAM id="env1_release" value="1.8"/>
+    <PARAM id="env1_sustain" value="0.85"/>
+    <PARAM id="filter_cutoff" value="1517.0"/>
+    <PARAM id="filter_resonance" value="0.05"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="lfo2_mode" value="1.0"/>
+    <PARAM id="lfo2_rate" value="0.2"/>
+    <PARAM id="master_gain" value="-10.0"/>
+    <PARAM id="noise_enable" value="1.0"/>
+    <PARAM id="noise_level" value="0.04"/>
+    <PARAM id="noise_type" value="1.0"/>
+    <PARAM id="osc1_gain" value="0.5"/>
+    <PARAM id="osc1_waveform" value="1.0"/>
+    <PARAM id="osc1_waveform_b" value="1.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_fine" value="9.0"/>
+    <PARAM id="osc2_gain" value="0.5"/>
+    <PARAM id="osc3_enable" value="1.0"/>
+    <PARAM id="osc3_fine" value="-5.0"/>
+    <PARAM id="osc3_gain" value="0.3"/>
+    <PARAM id="osc3_pitch" value="-12.0"/>
+    <PARAM id="osc3_waveform" value="1.0"/>
+    <PARAM id="osc3_waveform_b" value="1.0"/>
+    <PARAM id="unison_spread" value="90.0"/>
+    <PARAM id="unison_voices" value="3.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="1" sourceIndex="1" minValue="0.4048" maxValue="0.5145"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

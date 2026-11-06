@@ -1,5 +1,4 @@
 import {
-  INIT_PRESET,
   listenerSet,
   MAX_CURVE_POINTS,
   NUM_LFOS,
@@ -12,8 +11,7 @@ import {
   type Point,
   type UiInfo,
 } from '../backend.ts';
-
-export const STORAGE_KEY = 'samplerealm-modulate-presets';
+import { localPresets, type PresetStorage, type StoredPreset } from './localPresets.ts';
 
 // The demo has no host to follow
 const DEMO_TEMPO = 120;
@@ -49,17 +47,8 @@ export async function loadEngine(url: string): Promise<{ wasm: ArrayBuffer; info
 // The node's port, so tests can stand in for it
 export type EnginePort = Pick<MessagePort, 'postMessage'> & { onmessage: ((e: MessageEvent) => void) | null };
 
-export type PresetStorage = Pick<Storage, 'getItem' | 'setItem'>;
-
-// What the plugin's preset file holds: parameters, modulation and curves
-export interface StoredPreset {
-  params: Record<string, number>;
-  modulation: Record<string, Modulation>;
-  curves: Point[][];
-}
-
 // Storage can be missing or throw, e.g. in a private window
-const browserStorage = (): PresetStorage | undefined => {
+export const browserStorage = (): PresetStorage | undefined => {
   try {
     return globalThis.localStorage;
   } catch {
@@ -74,7 +63,7 @@ export type WorkletBackend = ModulateBackend & {
   attach(port: EnginePort): void;
 };
 
-export function workletBackend(info: UiInfo, storage: PresetStorage | undefined = browserStorage()): WorkletBackend {
+export function workletBackend(info: UiInfo, factoryPresets: StoredPreset[] = [], storage?: PresetStorage): WorkletBackend {
   const entry = paramLookup(new Map(info.params.map((param, index) => [param.id, { param, index, value: param.defaultValue }])));
   const listeners = new Map<string, Set<(value: number) => void>>();
   const modulations = new Map<string, Modulation>();
@@ -86,29 +75,29 @@ export function workletBackend(info: UiInfo, storage: PresetStorage | undefined 
   let port: EnginePort | null = null;
   // Sent once the worklet attaches
   let pending: unknown[] = [{ type: 'tempo', bpm: DEMO_TEMPO }];
-  let currentPreset = '';
 
   const post = (message: unknown) => {
     if (port) port.postMessage(message);
     else pending.push(message);
   };
 
-  const setValue = (id: string, value: number) => {
+  // Loading a preset applies through these, so they don't mark it modified
+  const applyValue = (id: string, value: number) => {
     const found = entry(id);
     post({ type: 'param', index: found.index, value });
     found.value = value;
     listeners.get(id)?.forEach((listener) => listener(value));
   };
 
-  const setModulation = (id: string, modulation: Modulation | null) => {
+  // Doesn't notify, so a preset load can notify once for all of them
+  const storeModulation = (id: string, modulation: Modulation | null) => {
     if (modulation) modulations.set(id, modulation);
     else modulations.delete(id);
 
     post({ type: 'modulation', index: entry(id).index, ...toRouting(modulation) });
-    modulationListeners.notify();
   };
 
-  const setCurve = (lfo: number, points: Point[]) => {
+  const applyCurve = (lfo: number, points: Point[]) => {
     // The engine's points() holds no more
     const kept = points.slice(0, MAX_CURVE_POINTS);
     curves[lfo] = kept.map(({ x, y }) => ({ x, y }));
@@ -116,28 +105,26 @@ export function workletBackend(info: UiInfo, storage: PresetStorage | undefined 
     curveListeners.notify(lfo);
   };
 
-  const apply = (preset: StoredPreset) => {
-    // Ids this engine doesn't have are skipped, as the APVTS skips them
-    for (const { id, defaultValue } of info.params) setValue(id, preset.params[id] ?? defaultValue);
-    for (const { id } of info.params) setModulation(id, preset.modulation[id] ?? null);
-    for (let lfo = 0; lfo < NUM_LFOS; lfo++) setCurve(lfo, preset.curves[lfo] ?? []);
-  };
+  const presets = localPresets({
+    factory: factoryPresets,
+    storage,
+    capture: () => ({
+      params: Object.fromEntries(info.params.map(({ id }) => [id, entry(id).value])),
+      modulation: Object.fromEntries(modulations),
+      curves: curves.map((points) => points.map((point) => ({ ...point }))),
+    }),
+    apply: (state) => {
+      // Ids this engine doesn't have are skipped, as the APVTS skips them
+      for (const { id, defaultValue } of info.params) applyValue(id, state.params[id] ?? defaultValue);
+      for (const { id } of info.params) storeModulation(id, state.modulation[id] ?? null);
+      modulationListeners.notify();
+      for (let lfo = 0; lfo < NUM_LFOS; lfo++) applyCurve(lfo, state.curves[lfo] ?? []);
+    },
+  });
 
-  const readPresets = (): Record<string, StoredPreset> => {
-    try {
-      return JSON.parse(storage?.getItem(STORAGE_KEY) ?? '{}') as Record<string, StoredPreset>;
-    } catch {
-      return {};
-    }
-  };
-
-  const writePresets = (presets: Record<string, StoredPreset>) => {
-    try {
-      storage?.setItem(STORAGE_KEY, JSON.stringify(presets));
-      return storage !== undefined;
-    } catch {
-      return false;
-    }
+  const setValue = (id: string, value: number) => {
+    applyValue(id, value);
+    presets.markModified();
   };
 
   const midi = (bytes: ArrayLike<number>) => {
@@ -147,6 +134,8 @@ export function workletBackend(info: UiInfo, storage: PresetStorage | undefined 
 
   return {
     info,
+    about: { version: info.version, commit: info.commit, build: info.build, running: 'Web demo' },
+    presets,
     param: (id) => entry(id).param,
     getValue: (id) => entry(id).value,
     setValue,
@@ -158,41 +147,20 @@ export function workletBackend(info: UiInfo, storage: PresetStorage | undefined 
       return () => set.delete(listener);
     },
     getModulation: (id) => modulations.get(id) ?? null,
-    setModulation,
+    setModulation: (id, modulation) => {
+      storeModulation(id, modulation);
+      modulationListeners.notify();
+      presets.markModified();
+    },
     onModulation: modulationListeners.add,
     getCurve: (lfo) => curves[lfo] ?? [],
-    setCurve,
+    setCurve: (lfo, points) => {
+      applyCurve(lfo, points);
+      presets.markModified();
+    },
     onCurve: curveListeners.add,
     onLevel: levelListeners.add,
     onLive: liveListeners.add,
-    presets: {
-      list: async () => ({ names: Object.keys(readPresets()).sort((a, b) => a.localeCompare(b)), current: currentPreset }),
-      load: async (name) => {
-        const stored = name === INIT_PRESET ? { params: {}, modulation: {}, curves: [] } : readPresets()[name];
-        if (!stored) return false;
-        apply(stored);
-        currentPreset = name === INIT_PRESET ? '' : name;
-        return true;
-      },
-      save: async (name) => {
-        if (!name || name === INIT_PRESET) return false;
-        const preset: StoredPreset = {
-          params: Object.fromEntries(info.params.map(({ id }) => [id, entry(id).value])),
-          modulation: Object.fromEntries(modulations),
-          curves: curves.map((points) => points.map((point) => ({ ...point }))),
-        };
-        const saved = writePresets({ ...readPresets(), [name]: preset });
-        if (saved) currentPreset = name;
-        return saved;
-      },
-      remove: async (name) => {
-        const presets = readPresets();
-        if (!(name in presets)) return false;
-        delete presets[name];
-        if (name === currentPreset) currentPreset = '';
-        return writePresets(presets);
-      },
-    },
     noteOn: (note) => midi([NOTE_ON, note, VELOCITY]),
     noteOff: (note) => midi([NOTE_OFF, note, 0]),
     midi,

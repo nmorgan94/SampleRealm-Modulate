@@ -1,10 +1,12 @@
 // Mirrors Source/ui/CustomLookAndFeel.h, ModulatableSlider, StepperDisplay, ValueLabelSlider and CustomLFOTabButton
-import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import type { ModulateBackend, Modulation, ModulationSource, ParamInfo } from './backend.ts';
-import { pointIn, type Rect } from './editorRoot.ts';
+import { bubbleAt } from './bubble.ts';
+import { areaInEditor, pointIn, useEditorRoot, type Rect } from './editorRoot.ts';
 import { juceHeight } from './fonts.ts';
 import { useLive, useModulation, useParam } from './hooks.ts';
-import { Menu, useMenu, type MenuItem } from './Menu.tsx';
+import { useMenu, type MenuItem } from './Menu.tsx';
 import { applyDepthChange, modulatedValue, sourceValue } from './modulation.ts';
 import { formatValue, fromProportion, snap, toProportion } from './params.ts';
 
@@ -94,9 +96,11 @@ function useModulationControls(backend: ModulateBackend, id: string, value: numb
   const depthDrag = useRef<number | null>(null);
   const base = toProportion(param, value);
 
+  const clear = () => backend.setModulation(id, null);
+
   return {
     modulation,
-    menu,
+    menu: menu.element,
     // Moving the value keeps the range on it
     followValue: (next: number) => modulation && backend.setModulation(id, applyDepthChange(modulation, toProportion(param, next), 0)),
     badgeHandlers: {
@@ -118,9 +122,8 @@ function useModulationControls(backend: ModulateBackend, id: string, value: numb
     onContextMenu: (e: ReactMouseEvent<HTMLElement>) => {
       e.preventDefault();
       if (!modulation) return;
-      menu.open(e.currentTarget, pointIn(e.currentTarget, e.currentTarget.offsetWidth, e.clientX, e.clientY));
+      menu.open(e.currentTarget, [{ kind: 'item', label: 'Clear Assignment', onSelect: clear }], pointIn(e.currentTarget, e.currentTarget.offsetWidth, e.clientX, e.clientY));
     },
-    clear: () => backend.setModulation(id, null),
   };
 }
 
@@ -204,14 +207,26 @@ export function FittedText({ text, width }: { text: string; width: number }) {
   );
 }
 
-function Bubble({ text }: { text: string }) {
-  return (
+function Bubble({ target, text }: { target: RefObject<HTMLElement | null>; text: string }) {
+  const root = useEditorRoot();
+  const box = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (root && target.current && box.current) setPosition(bubbleAt(areaInEditor(target.current, root), box.current.offsetWidth, box.current.offsetHeight));
+  }, [root, target, text]);
+
+  if (!root) return null;
+
+  return createPortal(
     <div
-      className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 -translate-x-1/2 rounded-xs border border-accent bg-widget px-1.5 py-0.5 whitespace-nowrap text-accent"
-      style={{ fontSize: juceHeight(12) }}
+      ref={box}
+      className="pointer-events-none absolute z-30 rounded-xs border border-accent bg-widget px-1.5 py-0.5 whitespace-nowrap text-accent"
+      style={{ ...(position ?? { visibility: 'hidden' }), fontSize: juceHeight(12) }}
     >
       {text}
-    </div>
+    </div>,
+    root
   );
 }
 
@@ -230,6 +245,7 @@ export function Knob({ backend, id, bounds, label, modulatable = false, enabled 
   const { value, param, dragging, handlers, aria } = useValueDrag(backend, id, rotaryValueAt, controls?.followValue);
   const modulation = controls?.modulation ?? null;
   const live = useLive(backend, modulation !== null);
+  const knob = useRef<HTMLDivElement>(null);
 
   const size = Math.min(bounds.width, bounds.height);
   const centre = size / 2;
@@ -249,6 +265,7 @@ export function Knob({ backend, id, bounds, label, modulatable = false, enabled 
         </div>
       )}
       <div
+        ref={knob}
         className="cursor-ns-resize touch-none"
         role="slider"
         {...aria}
@@ -283,9 +300,9 @@ export function Knob({ backend, id, bounds, label, modulatable = false, enabled 
             </div>
           </div>
         )}
-        {!label && dragging && <Bubble text={formatValue(param, value)} />}
+        {!label && dragging && <Bubble target={knob} text={formatValue(param, value)} />}
       </div>
-      {controls?.menu.anchor && <Menu anchor={controls.menu.anchor} onClose={controls.menu.close} items={[{ label: 'Clear Assignment', onSelect: controls.clear }]} />}
+      {controls?.menu}
     </>
   );
 }
@@ -357,7 +374,7 @@ export function Stepper({ backend, id, bounds, label, showSign = true, enabled =
           </>
         )}
       </div>
-      {controls.menu.anchor && <Menu anchor={controls.menu.anchor} onClose={controls.menu.close} items={[{ label: 'Clear Assignment', onSelect: controls.clear }]} />}
+      {controls.menu}
     </>
   );
 }
@@ -366,8 +383,7 @@ export function Stepper({ backend, id, bounds, label, showSign = true, enabled =
 export function ComboBox({ bounds, text, items, enabled = true }: {
   bounds: Rect;
   text: string;
-  // A function builds them as the menu opens
-  items: MenuItem[] | (() => MenuItem[]);
+  items: MenuItem[];
   enabled?: boolean;
 }) {
   const menu = useMenu();
@@ -379,15 +395,35 @@ export function ComboBox({ bounds, text, items, enabled = true }: {
         className="flex cursor-pointer items-center rounded-sm border border-widget-border bg-widget text-left"
         style={{ ...at(bounds), ...dimmed(enabled), fontSize: juceHeight(14) }}
         aria-haspopup="menu"
-        onClick={(e) => menu.open(e.currentTarget)}
+        onClick={(e) => menu.open(e.currentTarget, items)}
       >
         <span className="flex-1 truncate pl-1.5">{text}</span>
         <svg className="mx-1.25 flex-none" width="10" height="6" viewBox="0 0 10 6" aria-hidden>
           <path d="M 0 0 L 10 0 L 5 6 Z" fill={enabled ? 'var(--color-accent)' : 'var(--color-dim)'} />
         </svg>
       </button>
-      {menu.anchor && <Menu anchor={menu.anchor} onClose={menu.close} items={typeof items === 'function' ? items() : items} />}
+      {menu.element}
     </>
+  );
+}
+
+interface TextButtonProps {
+  text: string;
+  style: CSSProperties;
+  onClick(e: ReactMouseEvent<HTMLButtonElement>): void;
+}
+
+// CustomLookAndFeel's drawButtonBackground and drawButtonText
+export function TextButton({ text, style, onClick }: TextButtonProps) {
+  return (
+    <button
+      type="button"
+      className="absolute cursor-pointer overflow-hidden rounded-sm border border-widget-border bg-widget px-1 text-ellipsis whitespace-nowrap text-fg hover:border-accent hover:text-accent active:border-accent active:text-accent"
+      style={{ ...style, fontSize: juceHeight(14) }}
+      onClick={onClick}
+    >
+      {text}
+    </button>
   );
 }
 
@@ -400,7 +436,7 @@ export function ChoiceBox({ backend, id, bounds, enabled = true }: { backend: Mo
       bounds={bounds}
       enabled={enabled}
       text={formatValue(param, value)}
-      items={param.choices.map((choice, index) => ({ label: choice, onSelect: () => commit(index) }))}
+      items={param.choices.map((choice, index) => ({ kind: 'item', label: choice, ticked: index === value, onSelect: () => commit(index) }))}
     />
   );
 }

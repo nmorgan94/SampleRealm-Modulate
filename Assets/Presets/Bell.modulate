@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Bell" category="Pluck" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.001"/>
+    <PARAM id="env1_decay" value="2.5"/>
+    <PARAM id="env1_release" value="2.0"/>
+    <PARAM id="env1_sustain" value="0.0"/>
+    <PARAM id="env2_attack" value="0.001"/>
+    <PARAM id="env2_decay" value="0.8"/>
+    <PARAM id="env2_release" value="0.8"/>
+    <PARAM id="env2_sustain" value="0.0"/>
+    <PARAM id="filter_enable" value="0.0"/>
+    <PARAM id="master_gain" value="-12.5"/>
+    <PARAM id="osc1_gain" value="0.5"/>
+    <PARAM id="osc1_waveform" value="9.0"/>
+    <PARAM id="osc1_waveform_b" value="9.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.0"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="15.0"/>
+    <PARAM id="osc2_waveform_b" value="15.0"/>
+    <ModMatrix>
+      <Assignment parameterID="osc2_gain" sourceType="2" sourceIndex="1" minValue="0.0" maxValue="0.4"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

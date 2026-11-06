@@ -1,103 +1,69 @@
-// Mirrors Source/ui/PresetBar.h
-import { useEffect, useState, type ComponentProps } from 'react';
-import { INIT_PRESET, type ModulateBackend } from './backend.ts';
-import { ComboBox, type Rect } from './controls.tsx';
-import { juceHeight } from './fonts.ts';
-import type { MenuItem } from './Menu.tsx';
+// Mirrors Source/ui/PresetBar.cpp
+import { useSyncExternalStore } from 'react';
+import { isSamePreset, type PresetBackend, type PresetEntry } from './backend.ts';
+import { TextButton, type Rect } from './controls.tsx';
+import { useMenu, type MenuItem } from './Menu.tsx';
+import type { PresetActions } from './presetActions.ts';
 
-const ACTION_COLOUR = 'var(--color-accent)';
-const DELETE_COLOUR = 'var(--color-delete)';
-
-type Dialog = { kind: 'save'; name: string } | { kind: 'delete'; name: string };
-
-function DialogButton({ children, ...props }: ComponentProps<'button'>) {
-  return (
-    <button type="button" className="h-6.5 min-w-16 cursor-pointer rounded-sm border border-widget-border bg-widget px-2 hover:text-accent" {...props}>
-      {children}
-    </button>
-  );
+// PresetBar::resized
+function layOut({ left, top, width, height }: Rect) {
+  const at = (x: number, w: number): Rect => ({ left: x, top, width: w, height });
+  const save = at(left + width - 48, 48);
+  const previous = at(left, 24);
+  const next = at(save.left - 8 - 24, 24);
+  const nameLeft = previous.left + previous.width + 4;
+  return { previous, next, save, name: at(nameLeft, next.left - 4 - nameLeft) };
 }
 
-export function PresetBar({ backend, bounds }: { backend: ModulateBackend; bounds: Rect }) {
-  const [names, setNames] = useState<string[]>([]);
-  const [current, setCurrent] = useState('');
-  const [dialog, setDialog] = useState<Dialog | null>(null);
+interface PresetBarProps {
+  presets: PresetBackend;
+  actions: PresetActions;
+  bounds: Rect;
+}
 
-  const refresh = async () => {
-    const list = await backend.presets.list();
-    setNames(list.names);
-    setCurrent(list.current);
+export function PresetBar({ presets, actions, bounds }: PresetBarProps) {
+  const status = useSyncExternalStore(presets.onStatus, presets.status);
+  const menu = useMenu();
+  const layout = layOut(bounds);
+
+  const showPresetMenu = async (button: HTMLElement) => {
+    const list = await presets.list();
+    const { current } = presets.status();
+    const item = (preset: PresetEntry): MenuItem => ({
+      kind: 'item',
+      label: preset.name,
+      ticked: isSamePreset(preset, current),
+      onSelect: () => void presets.load(preset),
+    });
+
+    // Factory presets by category, user presets flat
+    const categories = new Map<string, PresetEntry[]>();
+    for (const preset of list.filter((p) => p.isFactory)) {
+      const category = preset.category || 'Other';
+      categories.set(category, [...(categories.get(category) ?? []), preset]);
+    }
+    const users = list.filter((preset) => !preset.isFactory);
+
+    const next: MenuItem[] = [{ kind: 'header', label: 'Factory' }];
+    for (const category of [...categories.keys()].sort()) {
+      const entries = categories.get(category)!;
+      next.push({ kind: 'submenu', label: category, ticked: entries.some((p) => isSamePreset(p, current)), items: entries.map(item) });
+    }
+    if (categories.size === 0) next.push({ kind: 'item', label: 'No factory presets yet', disabled: true });
+
+    next.push({ kind: 'header', label: 'User' }, ...users.map(item));
+    if (users.length === 0) next.push({ kind: 'item', label: 'No user presets yet', disabled: true });
+
+    menu.open(button, next);
   };
-
-  useEffect(() => {
-    refresh();
-  }, [backend]);
-
-  const load = async (name: string) => {
-    await backend.presets.load(name);
-    await refresh();
-  };
-
-  const save = async (name: string) => {
-    setDialog(null);
-    const trimmed = name.trim();
-    if (trimmed && (await backend.presets.save(trimmed))) await refresh();
-  };
-
-  const remove = async (name: string) => {
-    setDialog(null);
-    await backend.presets.remove(name);
-    await refresh();
-  };
-
-  // Rebuilt as it opens, so Delete follows the current preset
-  const items = (): MenuItem[] => [
-    { label: INIT_PRESET, onSelect: () => load(INIT_PRESET) },
-    { label: 'Save', colour: ACTION_COLOUR, onSelect: () => (current ? save(current) : setDialog({ kind: 'save', name: '' })) },
-    { label: 'Save As...', colour: ACTION_COLOUR, onSelect: () => setDialog({ kind: 'save', name: current }) },
-    ...(current ? [{ label: `Delete "${current}"`, colour: DELETE_COLOUR, onSelect: () => setDialog({ kind: 'delete', name: current }) }] : []),
-    'separator' as const,
-    ...names.map((name) => ({ label: name, onSelect: () => load(name) })),
-  ];
 
   return (
     <>
-      <ComboBox bounds={bounds} text={current || INIT_PRESET} items={items} />
-
-      {dialog && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50" style={{ fontSize: juceHeight(14) }}>
-          <form
-            className="min-w-70 rounded-md border border-accent bg-panel p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (dialog.kind === 'save') save(new FormData(e.currentTarget).get('presetName')?.toString() ?? '');
-              else remove(dialog.name);
-            }}
-          >
-            <h2 className="mb-2 font-bold">{dialog.kind === 'save' ? 'Save Preset' : 'Delete Preset'}</h2>
-            {dialog.kind === 'save' ? (
-              <>
-                <p className="mb-2">Enter a name for this preset:</p>
-                <input
-                  className="mb-3 w-full rounded-sm border border-widget-border bg-black px-1.5 py-1"
-                  name="presetName"
-                  defaultValue={dialog.name}
-                  autoFocus
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-              </>
-            ) : (
-              <p className="mb-3">{`Delete preset "${dialog.name}"?`}</p>
-            )}
-            <div className="flex justify-end gap-1.5">
-              <DialogButton type="submit" autoFocus={dialog.kind === 'delete'}>
-                {dialog.kind === 'save' ? 'Save' : 'Delete'}
-              </DialogButton>
-              <DialogButton onClick={() => setDialog(null)}>Cancel</DialogButton>
-            </div>
-          </form>
-        </div>
-      )}
+      <TextButton text="<" style={layout.previous} onClick={() => void presets.loadPrevious()} />
+      <TextButton text={status.current.name + (status.modified ? ' *' : '')} style={layout.name} onClick={(e) => void showPresetMenu(e.currentTarget)} />
+      <TextButton text=">" style={layout.next} onClick={() => void presets.loadNext()} />
+      <TextButton text="Save" style={layout.save} onClick={() => void actions.save()} />
+      {menu.element}
     </>
   );
 }

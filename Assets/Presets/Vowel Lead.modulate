@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Vowel Lead" category="Lead" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="drive" value="0.1"/>
+    <PARAM id="env1_attack" value="0.02"/>
+    <PARAM id="env1_decay" value="0.2"/>
+    <PARAM id="env1_sustain" value="0.9"/>
+    <PARAM id="filter_cutoff" value="3500.0"/>
+    <PARAM id="filter_resonance" value="0.2"/>
+    <PARAM id="glide_time" value="0.12"/>
+    <PARAM id="lfo1_mode" value="1.0"/>
+    <PARAM id="lfo1_rate" value="0.35"/>
+    <PARAM id="master_gain" value="-9.5"/>
+    <PARAM id="num_voices" value="1.0"/>
+    <PARAM id="osc1_morph" value="0.5"/>
+    <PARAM id="osc1_waveform" value="7.0"/>
+    <PARAM id="osc1_waveform_b" value="6.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_fine" value="7.0"/>
+    <PARAM id="osc2_gain" value="0.3"/>
+    <ModMatrix>
+      <Assignment parameterID="osc1_morph" sourceType="1" sourceIndex="0" minValue="0.1" maxValue="0.9"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

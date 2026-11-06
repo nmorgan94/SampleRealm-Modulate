@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<Parameters currentPreset="Fixture">
+<Parameters>
   <PARAM id="coarse_pitch" value="-8.046627044677734e-7"/>
   <PARAM id="drive" value="0.6299999952316284"/>
   <PARAM id="drive_hq" value="1.0"/>

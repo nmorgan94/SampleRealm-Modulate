@@ -35,7 +35,8 @@ A 3-oscillator wavetable synthesizer with deep modulation
 - Envelope and LFO playhead visualization
 
 ### Presets
-- Save, load, and delete user presets
+- Factory and user presets, stepped through with the arrows or picked from a list
+- Save, rename and delete user presets; a * shows when the sound has changed
 
 ### Output
 - Master gain, −24 to +6 dB

@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "shared/SynthSettings.h"
+#include <BinaryData.h>
 
 #if PLUGIN_WEBVIEW_EDITOR
  #include "webview/WebViewEditor.h"
@@ -19,10 +20,40 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
        apvts (*this, nullptr, "Parameters", Parameters::createLayout())
 {
     reinitialiseStateManagers();
+    apvts.state.addListener (this);
+
+    // Parameters reach the PresetManager as parameters; modulation and curves only as state
+    modulationManager.onEdit = lfoCurveState.onEdit = [this] { presetManager.markModified(); };
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
+    apvts.state.removeListener (this);
+}
+
+PresetManager::Config AudioPluginAudioProcessor::createPresetConfig()
+{
+    PresetManager::Config config;
+    config.fileExtension = ".modulate";
+    config.userDirectory = PresetManager::getDefaultUserDirectory (JucePlugin_Manufacturer, JucePlugin_Name);
+    config.author        = JucePlugin_Manufacturer;
+    config.formatVersion = Parameters::versionHint;
+
+    // Factory presets are embedded from Assets/Presets alongside the font
+    for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+    {
+        const auto* resource = BinaryData::namedResourceList[i];
+
+        if (! juce::String (BinaryData::getNamedResourceOriginalFilename (resource)).endsWithIgnoreCase (config.fileExtension))
+            continue;
+
+        int size = 0;
+
+        if (const auto* data = BinaryData::getNamedResource (resource, size))
+            config.factoryPresets.emplace_back (data, static_cast<size_t> (size));
+    }
+
+    return config;
 }
 
 //==============================================================================
@@ -185,11 +216,6 @@ juce::AudioProcessorEditor* AudioPluginAudioProcessor::createEditor()
 }
 
 //==============================================================================
-juce::ValueTree AudioPluginAudioProcessor::getStateTree()
-{
-    return apvts.copyState();
-}
-
 void AudioPluginAudioProcessor::reinitialiseStateManagers()
 {
     auto modMatrixState = getOrCreateStateChild(apvts.state, modMatrixStateID);
@@ -199,51 +225,28 @@ void AudioPluginAudioProcessor::reinitialiseStateManagers()
     lfoCurveState.initialise(lfoCurvesState, &undoManager);
 }
 
-bool AudioPluginAudioProcessor::applyStateTree(const juce::ValueTree& newState)
+// apvts.replaceState: a preset, Init or a session. Init's state has no ModMatrix or LFOCurves
+void AudioPluginAudioProcessor::valueTreeRedirected (juce::ValueTree&)
 {
-    if (! newState.hasType (apvts.state.getType()))
-        return false;
-
-    apvts.replaceState (newState);
     reinitialiseStateManagers();
-    return true;
-}
-
-void AudioPluginAudioProcessor::resetToDefaultState()
-{
-    for (auto* param : getParameters())
-        param->setValueNotifyingHost (param->getDefaultValue());
-
-    getOrCreateStateChild(apvts.state, modMatrixStateID).removeAllChildren (nullptr);
-    getOrCreateStateChild(apvts.state, lfoCurvesStateID).removeAllChildren (nullptr);
-    setCurrentPresetName ({});
-
-    reinitialiseStateManagers();
-}
-
-juce::String AudioPluginAudioProcessor::getCurrentPresetName() const
-{
-    return apvts.state.getProperty (presetNameID).toString();
-}
-
-void AudioPluginAudioProcessor::setCurrentPresetName(const juce::String& name)
-{
-    apvts.state.setProperty (presetNameID, name, nullptr);
+    ++stateChanges;
 }
 
 void AudioPluginAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = getStateTree();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
-    copyXmlToBinary (*xml, destData);
+    auto state = apvts.copyState();
+    presetManager.addPresetInfoTo (state);
+
+    if (const auto xml = state.createXml())
+        copyXmlToBinary (*xml, destData);
 }
 
 void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+    const auto xml = getXmlFromBinary (data, sizeInBytes);
 
-    if (xmlState.get() != nullptr)
-        applyStateTree (juce::ValueTree::fromXml (*xmlState));
+    if (xml != nullptr)
+        presetManager.restoreState (juce::ValueTree::fromXml (*xml));
 }
 
 //==============================================================================

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Sub Bass" category="Bass" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="drive" value="0.08"/>
+    <PARAM id="env1_attack" value="0.003"/>
+    <PARAM id="env1_decay" value="0.2"/>
+    <PARAM id="env1_release" value="0.12"/>
+    <PARAM id="env1_sustain" value="1.0"/>
+    <PARAM id="filter_cutoff" value="600.0"/>
+    <PARAM id="filter_resonance" value="0.01"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="glide_time" value="0.04"/>
+    <PARAM id="master_gain" value="-8.0"/>
+    <PARAM id="num_voices" value="1.0"/>
+    <PARAM id="osc1_gain" value="0.8"/>
+    <PARAM id="osc1_pitch" value="-24.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.2"/>
+    <PARAM id="osc2_pitch" value="-12.0"/>
+    <PARAM id="osc2_waveform" value="3.0"/>
+    <PARAM id="osc2_waveform_b" value="3.0"/>
+  </Parameters>
+</PRESET>

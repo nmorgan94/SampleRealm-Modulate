@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Drawbar Organ" category="Keys" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="drive" value="0.06"/>
+    <PARAM id="env1_attack" value="0.005"/>
+    <PARAM id="env1_release" value="0.06"/>
+    <PARAM id="env1_sustain" value="1.0"/>
+    <PARAM id="filter_enable" value="0.0"/>
+    <PARAM id="lfo1_mode" value="1.0"/>
+    <PARAM id="lfo1_rate" value="6.5"/>
+    <PARAM id="master_gain" value="-15.0"/>
+    <PARAM id="osc1_gain" value="0.6"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.43"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="0.0"/>
+    <PARAM id="osc2_waveform_b" value="0.0"/>
+    <PARAM id="osc3_enable" value="1.0"/>
+    <PARAM id="osc3_gain" value="0.3"/>
+    <PARAM id="osc3_pitch" value="19.0"/>
+    <PARAM id="osc3_waveform" value="0.0"/>
+    <PARAM id="osc3_waveform_b" value="0.0"/>
+    <ModMatrix>
+      <Assignment parameterID="osc2_gain" sourceType="1" sourceIndex="0" minValue="0.3" maxValue="0.55"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

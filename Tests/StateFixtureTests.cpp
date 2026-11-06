@@ -8,7 +8,6 @@ using Catch::Matchers::WithinAbs;
 
 namespace
 {
-    // Saved by 0.0.1, with every parameter moved, two assignments and a drawn LFO 2
     std::unique_ptr<juce::XmlElement> savedSession()
     {
         auto xml = juce::XmlDocument::parse (juce::File (__FILE__).getSiblingFile ("fixtures/session-0.0.1.xml"));
@@ -84,6 +83,13 @@ TEST_CASE_METHOD (ProcessorFixture, "A session saved by 0.0.1 loads the same", "
         const auto resaved = juce::AudioProcessor::getXmlFromBinary (state.getData(), static_cast<int> (state.getSize()));
 
         REQUIRE (resaved != nullptr);
+
+        for (const auto* name : { "presetName", "presetCategory", "presetIsFactory", "presetModified" })
+        {
+            CHECK (resaved->hasAttribute (name));
+            resaved->removeAttribute (name);
+        }
+
         CHECK (resaved->isEquivalentTo (session.get(), true));
     }
 }

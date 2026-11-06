@@ -1,6 +1,20 @@
 // The C++ side of these names is Source/webview/WebViewEditor.cpp
 import { getNativeFunction, getSliderState } from '@juce-framework/webview';
-import { listenerSet, NUM_LFOS, paramLookup, toRouting, type Level, type Live, type ModulateBackend, type Modulation, type Point, type UiInfo } from '../backend.ts';
+import {
+  listenerSet,
+  NUM_LFOS,
+  paramLookup,
+  toRouting,
+  type Level,
+  type Live,
+  type ModulateBackend,
+  type Modulation,
+  type Point,
+  type PresetBackend,
+  type PresetEntry,
+  type PresetStatus,
+  type UiInfo,
+} from '../backend.ts';
 import { toProportion } from '../params.ts';
 
 const call = async <T>(name: string, ...args: unknown[]) => (await getNativeFunction(name)(...args)) as T;
@@ -13,7 +27,37 @@ const listen = <T>(event: string, listener: (payload: T) => void) => {
 // JUCE's type lists only its own initialisation data, and wraps each item in an array
 const initial = <T>(name: string) => (window.__JUCE__.initialisationData as unknown as Record<string, T[]>)[name]![0]!;
 
-export function juceBackend(): ModulateBackend {
+function pluginPresets(): PresetBackend {
+  let status = JSON.parse(initial<string>('presetStatus')) as PresetStatus;
+  const listeners = listenerSet<[status: PresetStatus]>();
+
+  const update = (next: PresetStatus) => {
+    status = next;
+    listeners.notify(status);
+  };
+
+  // Asked again once listening, in case a change came first
+  listen<PresetStatus>('presetStatus', update);
+  call<PresetStatus>('presetStatus').then(update);
+  const error = async (result: Promise<string>) => (await result) || null;
+
+  return {
+    status: () => status,
+    onStatus: listeners.add,
+    list: () => call<PresetEntry[]>('presetList'),
+    load: async (preset) => void (await call('presetLoad', preset)),
+    loadInit: async () => void (await call('presetInit')),
+    loadNext: async () => void (await call('presetStep', 1)),
+    loadPrevious: async () => void (await call('presetStep', -1)),
+    exists: (name) => call<boolean>('presetExists', name),
+    save: (name, category) => error(call<string>('presetSave', name, category)),
+    rename: (preset, newName) => error(call<string>('presetRename', preset, newName)),
+    remove: (preset) => error(call<string>('presetDelete', preset)),
+    showFolder: () => void call('presetShowFolder'),
+  };
+}
+
+export function pluginBackend(): ModulateBackend {
   const info = JSON.parse(initial<string>('uiInfo')) as UiInfo;
   const entry = paramLookup(new Map(info.params.map((param) => [param.id, { param, slider: getSliderState(param.id) }])));
   let modulations = new Map(Object.entries(initial<Record<string, Modulation>>('modulation')));
@@ -36,6 +80,8 @@ export function juceBackend(): ModulateBackend {
 
   return {
     info,
+    about: { version: info.version, commit: info.commit, build: info.build, running: initial<string>('running') },
+    presets: pluginPresets(),
     param,
     getValue: (id) => slider(id).getScaledValue(),
     setValue: (id, value) => slider(id).setNormalisedValue(toProportion(param(id), value)),
@@ -64,11 +110,5 @@ export function juceBackend(): ModulateBackend {
     onCurve: curveListeners.add,
     onLevel: (listener) => listen<Level>('level', listener),
     onLive: (listener) => listen<Live>('live', listener),
-    presets: {
-      list: () => call('presetList'),
-      load: (name) => call('presetLoad', name),
-      save: (name) => call('presetSave', name),
-      remove: (name) => call('presetDelete', name),
-    },
   };
 }

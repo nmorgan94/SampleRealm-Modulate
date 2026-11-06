@@ -123,7 +123,7 @@ function LfoContent({ backend, lfo }: { backend: ModulateBackend; lfo: number })
       <ComboBox
         bounds={{ left: 15, top: 162, width: 155, height: 20 }}
         text="Shape"
-        items={SHAPES.map((shape, index) => ({ label: shape.name, onSelect: () => applyShape(index) }))}
+        items={SHAPES.map((shape, index) => ({ kind: 'item', label: shape.name, onSelect: () => applyShape(index) }))}
       />
       <Label bounds={{ left: 15, top: 186, width: 38, height: 20 }} text="Mode" colour="var(--color-accent)" align="left" />
       <ChoiceBox backend={backend} id={id('mode')} bounds={{ left: 53, top: 186, width: 117, height: 20 }} />

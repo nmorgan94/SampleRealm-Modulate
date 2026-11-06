@@ -44,6 +44,45 @@ TEST_CASE_METHOD (ProcessorFixture, "The editor's text is Orbitron", "[editor][f
 
     for (auto* box : boxes)
         CHECK (lookAndFeel.getComboBoxFont (*box).getTypefacePtr()->getName() == "Orbitron");
+
+    std::vector<juce::TextButton*> buttons;
+    findAll (editor, buttons);
+    REQUIRE (buttons.size() >= 5);
+
+    for (auto* button : buttons)
+    {
+        CAPTURE (button->getButtonText());
+        CHECK (lookAndFeel.getTextButtonFont (*button, button->getHeight()).getTypefacePtr()->getName() == "Orbitron");
+    }
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "The header fits the title, the preset bar and the meter side by side", "[editor]")
+{
+    AudioPluginAudioProcessorEditor editor (processor);
+
+    std::vector<HeaderBar*> headers;
+    findAll (editor, headers);
+    REQUIRE (headers.size() == 1);
+    CHECK (headers[0]->getBounds() == juce::Rectangle<int> (0, 0, AudioPluginAudioProcessorEditor::width, HeaderBar::height));
+
+    std::vector<juce::Label*> labels;
+    findAll (*headers[0], labels);
+    const auto title = std::ranges::find_if (labels, [] (auto* label) { return label->getText() == "SampleRealm: MODULATE"; });
+    REQUIRE (title != labels.end());
+
+    // Squeezed no further than the label allows
+    const auto titleWidth = juce::GlyphArrangement::getStringWidth (editor.getLookAndFeel().getLabelFont (**title), (*title)->getText());
+    CHECK (titleWidth * (*title)->getMinimumHorizontalScale() <= static_cast<float> ((*title)->getWidth()));
+
+    std::vector<PresetBar*> bars;
+    findAll (*headers[0], bars);
+    REQUIRE (bars.size() == 1);
+    CHECK (bars[0]->getX() > (*title)->getRight());
+
+    std::vector<MasterMeter*> meters;
+    findAll (*headers[0], meters);
+    REQUIRE (meters.size() == 1);
+    CHECK (bars[0]->getRight() < meters[0]->getX());
 }
 
 TEST_CASE ("Orbitron's weights come from the one variable font", "[editor][font]")
@@ -64,6 +103,22 @@ TEST_CASE ("Orbitron's weights come from the one variable font", "[editor][font]
     CHECK (regular.getTypeface()->getName() == "Orbitron");
     CHECK_THAT (weightOf (regular), WithinAbs (400.0, 0.0));
     CHECK_THAT (weightOf (bold), WithinAbs (700.0, 0.0));
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "About shows the version and build type, the commit and the UI", "[editor]")
+{
+    const auto lines = juce::StringArray::fromLines (About::text (processor));
+
+    REQUIRE (lines.size() == 5);
+    CHECK (lines[0] == "Version " JucePlugin_VersionString);
+   #if JUCE_DEBUG
+    CHECK (lines[1] == "Debug build");
+   #else
+    CHECK (lines[1] == "Release build");
+   #endif
+    CHECK (lines[2] == juce::String ("Commit ") + About::commit);
+    CHECK (lines[3] == "Undefined");
+    CHECK (lines[4] == "Native UI");
 }
 
 // For comparing with the web editor by eye: Modulate_Tests "[.snapshot]" writes editor-snapshot.png here

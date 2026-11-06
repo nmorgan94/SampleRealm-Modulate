@@ -8,6 +8,9 @@ class LFOCurveState : private juce::ValueTree::Listener
 public:
     LFOCurveState() = default;
 
+    // Each edit to the state, but not initialise
+    std::function<void()> onEdit;
+
     ~LFOCurveState() override
     {
         if (state.isValid())
@@ -144,11 +147,19 @@ private:
         snapshot = curves;
     }
 
-    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier&) override { rebuildSnapshot(); }
-    void valueTreeChildAdded(juce::ValueTree&, juce::ValueTree&) override { rebuildSnapshot(); }
-    void valueTreeChildRemoved(juce::ValueTree&, juce::ValueTree&, int) override { rebuildSnapshot(); }
-    void valueTreeChildOrderChanged(juce::ValueTree&, int, int) override { rebuildSnapshot(); }
-    void valueTreeParentChanged(juce::ValueTree&) override { rebuildSnapshot(); }
+    void edited()
+    {
+        rebuildSnapshot();
+
+        if (onEdit)
+            onEdit();
+    }
+
+    void valueTreePropertyChanged(juce::ValueTree&, const juce::Identifier&) override { edited(); }
+    void valueTreeChildAdded(juce::ValueTree&, juce::ValueTree&) override { edited(); }
+    void valueTreeChildRemoved(juce::ValueTree&, juce::ValueTree&, int) override { edited(); }
+    void valueTreeChildOrderChanged(juce::ValueTree&, int, int) override { edited(); }
+    void valueTreeParentChanged(juce::ValueTree&) override { edited(); }
     
     juce::ValueTree state;
     juce::UndoManager* undoManager = nullptr;

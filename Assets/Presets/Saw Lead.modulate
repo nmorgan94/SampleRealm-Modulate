@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Saw Lead" category="Lead" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="env1_attack" value="0.005"/>
+    <PARAM id="env1_decay" value="0.3"/>
+    <PARAM id="env1_release" value="0.25"/>
+    <PARAM id="env1_sustain" value="0.85"/>
+    <PARAM id="env2_attack" value="0.001"/>
+    <PARAM id="env2_decay" value="0.4"/>
+    <PARAM id="env2_release" value="0.2"/>
+    <PARAM id="env2_sustain" value="0.3"/>
+    <PARAM id="filter_cutoff" value="2500.0"/>
+    <PARAM id="filter_resonance" value="0.1"/>
+    <PARAM id="glide_time" value="0.08"/>
+    <PARAM id="master_gain" value="-4.0"/>
+    <PARAM id="num_voices" value="1.0"/>
+    <PARAM id="osc1_gain" value="0.6"/>
+    <PARAM id="osc1_waveform" value="1.0"/>
+    <PARAM id="osc1_waveform_b" value="1.0"/>
+    <PARAM id="osc2_enable" value="1.0"/>
+    <PARAM id="osc2_gain" value="0.25"/>
+    <PARAM id="osc2_pitch" value="12.0"/>
+    <PARAM id="osc2_waveform" value="13.0"/>
+    <PARAM id="osc2_waveform_b" value="13.0"/>
+    <PARAM id="unison_detune" value="18.0"/>
+    <PARAM id="unison_spread" value="60.0"/>
+    <PARAM id="unison_voices" value="5.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="2" sourceIndex="1" minValue="0.5348" maxValue="0.7294"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

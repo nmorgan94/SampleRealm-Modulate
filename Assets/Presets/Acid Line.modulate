@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PRESET name="Acid Line" category="Bass" author="SampleRealm" formatVersion="1">
+  <Parameters>
+    <PARAM id="drive" value="0.25"/>
+    <PARAM id="drive_hq" value="1.0"/>
+    <PARAM id="env1_attack" value="0.002"/>
+    <PARAM id="env1_decay" value="0.3"/>
+    <PARAM id="env1_release" value="0.08"/>
+    <PARAM id="env1_sustain" value="0.8"/>
+    <PARAM id="env2_attack" value="0.001"/>
+    <PARAM id="env2_decay" value="0.22"/>
+    <PARAM id="env2_release" value="0.1"/>
+    <PARAM id="env2_sustain" value="0.0"/>
+    <PARAM id="filter_cutoff" value="250.0"/>
+    <PARAM id="filter_resonance" value="0.55"/>
+    <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="glide_time" value="0.07"/>
+    <PARAM id="master_gain" value="-12.0"/>
+    <PARAM id="num_voices" value="1.0"/>
+    <PARAM id="osc1_pitch" value="-12.0"/>
+    <PARAM id="osc1_waveform" value="1.0"/>
+    <PARAM id="osc1_waveform_b" value="1.0"/>
+    <ModMatrix>
+      <Assignment parameterID="filter_cutoff" sourceType="2" sourceIndex="1" minValue="0.262" maxValue="0.592"/>
+    </ModMatrix>
+  </Parameters>
+</PRESET>

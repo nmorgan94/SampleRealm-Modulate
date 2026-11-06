@@ -85,10 +85,12 @@ const windowRms = (samples, windowSeconds) => {
 };
 
 //==============================================================================
-test('the ui info carries the version and every parameter as ParameterSpecs defines it', () => {
+test('the ui info carries the version, the commit, the build type and every parameter as ParameterSpecs defines it', () => {
   const info = readUiInfo(engine());
 
   assert.match(info.version, /^\d+\.\d+\.\d+$/);
+  assert.match(info.commit, /^([0-9a-f]{7,}(-local)?|unknown)$/);
+  assert.match(info.build, /^(Debug|Release)$/);
   assert.equal(info.params.length, 74);
   assert.equal(new Set(info.params.map((p) => p.id)).size, 74);
   assert.deepEqual(info.params.find((p) => p.id === 'glide_time'), {

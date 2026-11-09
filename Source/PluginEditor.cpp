@@ -109,10 +109,8 @@ namespace
     {
         for (auto* child : component->getChildren())
         {
-            if (auto* slider = dynamic_cast<ModulatableSlider*>(child))
-                slider->refreshAssignment();
-            else if (auto* stepper = dynamic_cast<StepperDisplay*>(child))
-                stepper->refreshAssignment();
+            if (auto* target = dynamic_cast<ModulationTarget*>(child))
+                target->refreshAssignment();
 
             refreshModulationBadges(child);
         }

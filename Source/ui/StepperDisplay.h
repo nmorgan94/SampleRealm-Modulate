@@ -4,11 +4,13 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../ModulationManager.h"
 #include "CustomLookAndFeel.h"
+#include "ModulationTarget.h"
 
 class AudioPluginAudioProcessor;
 
 class StepperDisplay : public juce::Component,
                        public juce::DragAndDropTarget,
+                       public ModulationTarget,
                        private juce::Timer
 {
 public:
@@ -87,8 +89,7 @@ public:
         if (attachment == nullptr)
             return;
 
-        setValue(0);
-        attachment->setValueAsCompleteGesture(static_cast<float>(value));
+        attachment->setValueAsCompleteGesture(static_cast<float>(juce::jlimit(minValue, maxValue, 0)));
         updateModulationRangeFromValue();
     }
 
@@ -114,8 +115,7 @@ public:
 
         if (newValue != value)
         {
-            setValue(newValue);
-            attachment->setValueAsPartOfGesture(static_cast<float>(value));
+            attachment->setValueAsPartOfGesture(static_cast<float>(newValue));
             updateModulationRangeFromValue();
         }
     }
@@ -136,8 +136,6 @@ public:
         value = juce::jlimit(minValue, maxValue, newValue);
         repaint();
     }
-
-    int getValue() const { return value; }
 
     void setRange(int newMin, int newMax)
     {
@@ -177,8 +175,7 @@ public:
         refreshAssignment();
     }
 
-    // Re-reads the modulation assignment, clearing the badge when there is none
-    void refreshAssignment()
+    void refreshAssignment() override
     {
         auto assignment = getModulationManager().getAssignment(parameterID);
         if (assignment.isAssigned())

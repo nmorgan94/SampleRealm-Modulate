@@ -4,12 +4,14 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CustomLookAndFeel.h"
 #include "ValueLabelSlider.h"
+#include "ModulationTarget.h"
 
 // Forward declaration
 class AudioPluginAudioProcessor;
 
 class ModulatableSlider : public ValueLabelSlider,
                           public juce::DragAndDropTarget,
+                          public ModulationTarget,
                           private juce::Timer
 {
 public:
@@ -34,7 +36,7 @@ public:
     // Re-reads this parameter's modulation assignment from the manager and updates the
     // badge/arc — including clearing it when the (e.g. newly loaded) preset has none.
     // Called on construction and after a preset load.
-    void refreshAssignment()
+    void refreshAssignment() override
     {
         auto assignment = processor.getModulationManager().getAssignment(parameterID);
         if (assignment.isAssigned())

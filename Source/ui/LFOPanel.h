@@ -104,7 +104,7 @@ public:
         tabbedComponent.setOutline(0);
         addAndMakeVisible(tabbedComponent);
         
-        // Register as listeners, then load each LFO's saved curve + tension.
+        // Register as listeners, then load each LFO's saved curve.
         for (size_t i = 0; i < 4; ++i)
             curveEditors[i]->addListener(this);
 
@@ -120,7 +120,7 @@ public:
         }
     }
     
-    // Re-reads every LFO's saved curve + tension. Also re-binds the
+    // Re-reads every LFO's saved curve. Also re-binds the
     // rate knob: the SYNC button's onClick can't do it on construction or a preset load, since a
     // ButtonAttachment only notifies when the toggle state actually changes.
     void reloadFromState()
@@ -131,9 +131,6 @@ public:
             curveEditors[i]->setControlPoints(savedPoints.empty()
                 ? CurveEditor::defaultControlPoints()
                 : savedPoints);
-
-            if (auto* param = apvts.getParameter(ParameterSpecs::lfo[i].tension.id))
-                curveEditors[i]->setTension(param->convertFrom0to1(param->getValue()));
 
             updateLFORateControl(i);
         }
@@ -223,6 +220,9 @@ private:
         
         tensionAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             apvts, ParameterSpecs::lfo[lfoIndex].tension.id, *tensionSliders.back()));
+
+        // The attachment only notifies when the value differs from the slider's default
+        tensionSliders.back()->onValueChange();
     }
     
     void createModulatableControl(juce::Component* container, const ParameterSpecs::Spec& spec,

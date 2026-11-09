@@ -47,8 +47,9 @@ public:
         coarsePitchSlider.attachLabel(coarsePitchLabel);
         addAndMakeVisible(coarsePitchSlider);
 
+        auto& apvts = proc.getAPVTS();
         coarsePitchAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            proc.getAPVTS(), ParameterSpecs::coarsePitch.id, coarsePitchSlider);
+            apvts, ParameterSpecs::coarsePitch.id, coarsePitchSlider);
 
         glideLabel.setText("Glide", juce::dontSendNotification);
         glideLabel.setJustificationType(juce::Justification::centred);
@@ -58,7 +59,7 @@ public:
         addAndMakeVisible(glideSlider);
 
         glideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            proc.getAPVTS(), ParameterSpecs::glideTime.id, glideSlider);
+            apvts, ParameterSpecs::glideTime.id, glideSlider);
     }
 
     void paint(juce::Graphics& g) override

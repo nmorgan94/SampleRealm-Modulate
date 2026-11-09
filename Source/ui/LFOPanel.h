@@ -133,7 +133,7 @@ public:
                 : savedPoints);
 
             if (auto* param = apvts.getParameter(ParameterSpecs::lfo[i].tension.id))
-                curveEditors[i]->setTension(param->getValue());
+                curveEditors[i]->setTension(param->convertFrom0to1(param->getValue()));
 
             updateLFORateControl(i);
         }
@@ -259,7 +259,11 @@ private:
         const std::vector<LfoCurve::Point> points(shape.points.begin(), shape.points.end());
 
         if (auto* param = apvts.getParameter(ParameterSpecs::lfo[lfoIndex].tension.id))
+        {
+            param->beginChangeGesture();
             param->setValueNotifyingHost(param->convertTo0to1(shape.tension));
+            param->endChangeGesture();
+        }
 
         curveEditors[lfoIndex]->setControlPoints(points);
         processor.setLFOCurvePoints(lfoIndex, points);

@@ -74,13 +74,22 @@ public:
 
         dragStartY = e.y;
         dragStartValue = value;
+
+        if (attachment != nullptr)
+        {
+            attachment->beginGesture();
+            isDraggingValue = true;
+        }
     }
 
     void mouseDoubleClick(const juce::MouseEvent&) override
     {
-        setValue(juce::jlimit(minValue, maxValue, 0));
-        if (onValueChange)
-            onValueChange(value);
+        if (attachment == nullptr)
+            return;
+
+        setValue(0);
+        attachment->setValueAsCompleteGesture(static_cast<float>(value));
+        updateModulationRangeFromValue();
     }
 
     void mouseDrag(const juce::MouseEvent& e) override
@@ -97,22 +106,29 @@ public:
             return;
         }
 
+        if (! isDraggingValue)
+            return;
+
         int deltaY = dragStartY - e.y;
         int newValue = juce::jlimit(minValue, maxValue, dragStartValue + (deltaY / 3));
 
         if (newValue != value)
         {
-            value = newValue;
-            repaint();
-
-            if (onValueChange)
-                onValueChange(value);
+            setValue(newValue);
+            attachment->setValueAsPartOfGesture(static_cast<float>(value));
+            updateModulationRangeFromValue();
         }
     }
 
     void mouseUp(const juce::MouseEvent&) override
     {
         isDraggingModulation = false;
+
+        if (isDraggingValue)
+        {
+            attachment->endGesture();
+            isDraggingValue = false;
+        }
     }
 
     void setValue(int newValue)
@@ -142,32 +158,34 @@ public:
         repaint();
     }
 
-    // Two-way binding to an integer APVTS parameter: initialises from the current
-    // value and writes changes back to the host.
+    // Two-way binding to an integer APVTS parameter
     void attachToParameter(AudioPluginAudioProcessor& proc, const juce::String& paramID)
     {
         processor = &proc;
         parameterID = paramID;
 
-        if (auto* param = dynamic_cast<juce::AudioParameterInt*>(getParameter()))
+        if (auto* param = getParameter())
         {
             const auto range = param->getNormalisableRange();
             setRange(juce::roundToInt(range.start), juce::roundToInt(range.end));
-            setValue(param->get());
+
+            attachment = std::make_unique<juce::ParameterAttachment>(
+                *param, [this](float newValue) { setValue(juce::roundToInt(newValue)); });
+            attachment->sendInitialUpdate();
         }
 
-        onValueChange = [this](int newValue)
-        {
-            if (auto* param = getParameter())
-                param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(newValue)));
-
-            updateModulationRangeFromValue();
-        };
-
-        restoreAssignment();
+        refreshAssignment();
     }
 
-    std::function<void(int)> onValueChange;
+    // Re-reads the modulation assignment, clearing the badge when there is none
+    void refreshAssignment()
+    {
+        auto assignment = getModulationManager().getAssignment(parameterID);
+        if (assignment.isAssigned())
+            setAssignedSource(assignment.isLFO(), assignment.sourceIndex);
+        else
+            setAssignedSource(true, -1);
+    }
 
     bool isInterestedInDragSource(const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override
     {
@@ -203,6 +221,8 @@ private:
 
     AudioPluginAudioProcessor* processor = nullptr;
     juce::String parameterID;
+    std::unique_ptr<juce::ParameterAttachment> attachment;
+    bool isDraggingValue = false;
     int assignedSourceIndex = -1;
     bool assignedIsLFO = true;
     bool isDraggingModulation = false;
@@ -217,7 +237,7 @@ private:
 
     juce::RangedAudioParameter* getParameter()
     {
-        return dynamic_cast<juce::RangedAudioParameter*>(processor->getAPVTS().getParameter(parameterID));
+        return processor->getAPVTS().getParameter(parameterID);
     }
 
     float getModulatedValueNormalized()
@@ -304,13 +324,6 @@ private:
         getModulationManager().clearAssignment(parameterID);
         setAssignedSource(true, -1);
         repaint();
-    }
-
-    void restoreAssignment()
-    {
-        auto assignment = getModulationManager().getAssignment(parameterID);
-        if (assignment.isAssigned())
-            setAssignedSource(assignment.isLFO(), assignment.sourceIndex);
     }
 
     juce::Rectangle<float> getModulationTrack() const

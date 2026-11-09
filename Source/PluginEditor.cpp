@@ -104,15 +104,17 @@ void AudioPluginAudioProcessorEditor::resized()
 //==============================================================================
 namespace
 {
-    // Depth-first walk that re-reads each modulation slider's assignment from the manager.
-    void refreshModulatableSliders(juce::Component* component)
+    // Depth-first walk that re-reads each slider's and stepper's assignment from the manager.
+    void refreshModulationBadges(juce::Component* component)
     {
         for (auto* child : component->getChildren())
         {
             if (auto* slider = dynamic_cast<ModulatableSlider*>(child))
                 slider->refreshAssignment();
+            else if (auto* stepper = dynamic_cast<StepperDisplay*>(child))
+                stepper->refreshAssignment();
 
-            refreshModulatableSliders(child);
+            refreshModulationBadges(child);
         }
     }
 }
@@ -130,7 +132,7 @@ void AudioPluginAudioProcessorEditor::refreshAfterStateChange()
 {
     // APVTS-attached knobs/menus follow the new parameter values automatically. The two UI
     // caches that don't are the modulation badges and the drawn LFO curves - refresh those.
-    refreshModulatableSliders(this);
+    refreshModulationBadges(this);
 
     if (lfoPanel != nullptr)
         lfoPanel->reloadFromState();

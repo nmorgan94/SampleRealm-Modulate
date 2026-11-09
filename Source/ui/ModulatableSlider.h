@@ -170,7 +170,7 @@ private:
     
     juce::RangedAudioParameter* getParameter()
     {
-        return dynamic_cast<juce::RangedAudioParameter*>(processor.getAPVTS().getParameter(parameterID));
+        return processor.getAPVTS().getParameter(parameterID);
     }
     
     void updateModulationRangeFromSlider()

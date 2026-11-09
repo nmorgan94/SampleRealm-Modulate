@@ -41,7 +41,8 @@ const magnitude = ([b0, b1, b2, a1, a2]: Coefficients, frequency: number, sample
 
 // The filter's gain at a frequency, for its mode, slope, cutoff and resonance (0..1)
 export function filterMagnitude(mode: number, slope: number, cutoff: number, resonance: number, frequency: number, sampleRate: number) {
-  const f = Math.min(20000, Math.max(20, cutoff));
+  const f = Math.min(20000, 0.49 * sampleRate, Math.max(20, cutoff));
+  frequency = Math.min(frequency, 0.5 * sampleRate);
   const q = 0.5 + Math.min(1, Math.max(0, resonance)) * 19.5;
   const fourPole = slope === FilterSlope.FourPole && mode !== FilterMode.Notch;
 

@@ -11,7 +11,7 @@ class ModulateSynth;
 class WavetableVoice : public juce::SynthesiserVoice
 {
 public:
-    WavetableVoice(const juce::AudioBuffer<float> wavetablesToUse[3], ModulateSynth& synth);
+    explicit WavetableVoice(ModulateSynth& synth);
     
     bool canPlaySound(juce::SynthesiserSound* sound) override;
 
@@ -30,7 +30,6 @@ public:
                         int startSample, int numSamples) override;
 
 private:
-    const juce::AudioBuffer<float>* wavetables;
     ModulateSynth& owner;
     
     double currentPhases[3][ParameterSpecs::maxUnison] = {};
@@ -46,7 +45,7 @@ private:
 
     bool withinVoiceLimit = true;
 
-    static float getInterpolatedSample(const float* data, int size, double phase);
+    static float getInterpolatedSample(const float* data, double phase);
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WavetableVoice)
 };

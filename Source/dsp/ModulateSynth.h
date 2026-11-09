@@ -11,7 +11,7 @@
 #include "LFO.h"
 #include "LfoCurve.h"
 #include "Modulation.h"
-#include "WavetableGenerator.h"
+#include "WavetableBank.h"
 #include "WavetableVoice.h"
 
 //==============================================================================
@@ -101,8 +101,8 @@ private:
     void updateVoiceCount();
     void advanceModulationSources(int numSamples);
     void updateFilter();
-    void updateOscillatorTables(bool forceRegen);
-    void blendWavetable(size_t oscIndex, float morph);
+    void updateOscillatorTables();
+    const float* tableFor(int oscIndex, int level);   // for voices, once per block
     void publishLive();
 
     Settings settings;
@@ -111,18 +111,22 @@ private:
 
     WavetableSynthesiser synth { *this };
     std::vector<WavetableVoice*> voices;
-    juce::AudioBuffer<float> wavetables[numOscillators];   // blended A/B output read by the audio voices
-    juce::AudioBuffer<float> sourceA[numOscillators];      // pure waveform A (osc{i}_waveform)
-    juce::AudioBuffer<float> sourceB[numOscillators];      // pure waveform B (osc{i}_waveform_b)
+
+    // One oscillator's A and B, and their mix, blended a level at a time as voices ask
+    struct OscillatorTables
+    {
+        WaveformType a = WaveformType::Sine, b = WaveformType::Sine;
+        float morph = 0.0f;
+        juce::AudioBuffer<float> blended { WavetableBank::numLevels, WavetableBank::size };
+        juce::uint32 blendedLevels = 0;   // bit L: level L of blended matches a, b and morph
+    };
+    OscillatorTables oscillatorTables[numOscillators];
+
     LFO lfos[numLfos];
     ADSREnvelope envelopes[numEnvelopes];
     Filter filter;
     Drive drive;
     Live live;
-
-    WaveformType currentWaveformTypes[numOscillators]  = { WaveformType::Sine, WaveformType::Sine, WaveformType::Sine };
-    WaveformType currentWaveformTypesB[numOscillators] = { WaveformType::Sine, WaveformType::Sine, WaveformType::Sine };
-    float lastMorph[numOscillators] = { -1.0f, -1.0f, -1.0f }; // -1 forces the first blend
 
     int currentVoiceCount = -1;
     std::vector<int> heldNotes;

@@ -2,9 +2,8 @@
 #include "ModulateSynth.h"
 
 //==============================================================================
-WavetableVoice::WavetableVoice(const juce::AudioBuffer<float> wavetablesToUse[3], ModulateSynth& synth)
-    : wavetables(wavetablesToUse),
-      owner(synth)
+WavetableVoice::WavetableVoice(ModulateSynth& synth)
+    : owner(synth)
 {
 }
 
@@ -38,10 +37,9 @@ void WavetableVoice::startNote(int midiNoteNumber, float velocity,
 
     for (int osc = 0; osc < 3; ++osc)
     {
-        const auto size = wavetables[osc].getNumSamples();
         currentPhases[osc][0] = 0.0;
         for (int u = 1; u < ParameterSpecs::maxUnison; ++u)
-            currentPhases[osc][u] = unisonRandom.nextDouble() * size;
+            currentPhases[osc][u] = unisonRandom.nextDouble() * WavetableBank::size;
     }
     
     noise.reset();
@@ -95,8 +93,6 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
         return;
     }
 
-    const int wavetableSize = wavetables[0].getNumSamples();
-
     const double currentGlideRatio = glideRatio.getCurrentValue();
     glideRatio.skip(numSamples);
 
@@ -122,7 +118,7 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
 
     bool         oscEnabled[3];
     float        oscGain[3];
-    const float* oscData[3];
+    const float* oscData[3][ParameterSpecs::maxUnison];
     double       oscPhaseIncrement[3][ParameterSpecs::maxUnison];
 
     const float  coarseSemis = owner.modulated(ParameterSpecs::coarsePitch);
@@ -138,15 +134,22 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
 
         oscEnabled[osc] = owner.isOn(specs.enable);
         oscGain[osc]    = owner.modulated(specs.gain);
-        oscData[osc]    = wavetables[osc].getReadPointer(0); // cached pointer, hoisted out of the sample loop
+
+        if (! oscEnabled[osc])
+            continue;
 
         const int    pitchOffset   = juce::roundToInt(owner.modulated(specs.pitch));
         const double fineRatio     = std::pow(2.0, owner.modulated(specs.fine) / 1200.0);
         const double oscFrequency  = juce::MidiMessage::getMidiNoteInHertz(currentMidiNote + pitchOffset) * currentGlideRatio * coarseRatio * fineRatio;
-        const double baseIncrement = oscFrequency * wavetableSize / getSampleRate();
+        const double baseIncrement = oscFrequency * WavetableBank::size / getSampleRate();
 
         for (int u = 0; u < unisonCount; ++u)
+        {
             oscPhaseIncrement[osc][u] = baseIncrement * unisonRatio[u];
+
+            const int tableLevel = WavetableBank::levelFor(oscFrequency * unisonRatio[u], getSampleRate());
+            oscData[osc][u] = tableLevel < 0 ? nullptr : owner.tableFor(osc, tableLevel);
+        }
     }
 
     const int numChannels = outputBuffer.getNumChannels();
@@ -161,19 +164,21 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             if (! oscEnabled[osc])
                 continue;
 
-            const float* data = oscData[osc];
-
             for (int u = 0; u < unisonCount; ++u)
             {
+                const float* data = oscData[osc][u];
+                if (data == nullptr)
+                    continue;
+
                 double& phase = currentPhases[osc][u];
 
-                const float s = getInterpolatedSample(data, wavetableSize, phase) * oscGain[osc];
+                const float s = getInterpolatedSample(data, phase) * oscGain[osc];
                 left  += s * unisonPanL[u];
                 right += s * unisonPanR[u];
 
                 phase += oscPhaseIncrement[osc][u];
-                while (phase >= wavetableSize)
-                    phase -= wavetableSize;
+                while (phase >= WavetableBank::size)
+                    phase -= WavetableBank::size;
             }
         }
 
@@ -208,10 +213,10 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
     }
 }
 
-float WavetableVoice::getInterpolatedSample(const float* data, int size, double phase)
+float WavetableVoice::getInterpolatedSample(const float* data, double phase)
 {
     const int   index0 = static_cast<int>(phase);
-    const int   index1 = (index0 + 1) % size;
+    const int   index1 = (index0 + 1) % WavetableBank::size;
     const float frac   = static_cast<float>(phase - index0);
 
     return data[index0] + frac * (data[index1] - data[index0]);

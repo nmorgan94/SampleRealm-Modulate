@@ -131,7 +131,7 @@ Needs Emscripten (`brew install emscripten`) and Node 24+.
 | Serve the demo with live reload at http://localhost:8099 | `cd webui && npm run serve` |
 | Build the plugin with the WebView editor | `cmake --workflow --preset webview` |
 
-- `Source/dsp/` and `Source/shared/` build for wasm: `juce_core` and `juce_audio_basics` only.
+- `Source/dsp/` and `Source/shared/` build for wasm: `juce_core`, `juce_audio_basics` and `juce_dsp` only.
 - Upload `wasm/build-wasm/SampleRealm-Modulate-<version>/` to the asset bucket's `demos/`.
   [`wasm.yml`](.github/workflows/wasm.yml) builds the same folder on GitHub as an artifact of that name.
 - The `webview` build installs over the native one; run the `release` workflow to switch back.

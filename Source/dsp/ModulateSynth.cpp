@@ -42,14 +42,7 @@ void ModulateSynth::prepare(double sampleRate, int maximumBlockSize, int numChan
     for (size_t i = 0; i < std::size(envelopes); ++i)
         configureEnvelope(envelopes[i], env[i], sampleRate);
 
-    const int wavetableSize = WavetableGenerator::getWavetableSize();
-    for (int i = 0; i < numOscillators; ++i)
-    {
-        sourceA[i].setSize(1, wavetableSize);
-        sourceB[i].setSize(1, wavetableSize);
-        wavetables[i].setSize(1, wavetableSize);
-    }
-    updateOscillatorTables(true);
+    WavetableBank::get(WaveformType::Sine);   // builds the bank here, not on the audio thread
 
     filter.prepare(sampleRate);
     updateFilter();
@@ -64,7 +57,7 @@ void ModulateSynth::prepare(double sampleRate, int maximumBlockSize, int numChan
 
     for (int i = 0; i < maxVoices; ++i)
     {
-        auto* voice = new WavetableVoice(wavetables, *this);
+        auto* voice = new WavetableVoice(*this);
         synth.addVoice(voice);
         voices.push_back(voice);
     }
@@ -96,7 +89,7 @@ void ModulateSynth::process(juce::AudioBuffer<float>& buffer, const juce::MidiBu
     advanceModulationSources(numSamples);
 
     updateFilter();
-    updateOscillatorTables(false);
+    updateOscillatorTables();
 
     buffer.clear();
     synth.renderNextBlock(buffer, midi, 0, numSamples);
@@ -105,13 +98,7 @@ void ModulateSynth::process(juce::AudioBuffer<float>& buffer, const juce::MidiBu
     {
         drive.setDrive(modulated(ParameterSpecs::drive));
         drive.process(buffer, isOn(driveHq));
-
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
-        {
-            auto* channelData = buffer.getWritePointer(channel);
-            for (int sample = 0; sample < numSamples; ++sample)
-                channelData[sample] = filter.processSample(channelData[sample], channel);
-        }
+        filter.process(buffer);
     }
 
     buffer.applyGain(juce::Decibels::decibelsToGain(valueOf(masterGain)));
@@ -266,43 +253,49 @@ void ModulateSynth::updateFilter()
                          modulated(filterResonance));
 }
 
-void ModulateSynth::updateOscillatorTables(bool forceRegen)
+void ModulateSynth::updateOscillatorTables()
 {
-    // Only on a change, as generating is slow
-    const auto regenerate = [this, forceRegen](juce::AudioBuffer<float>& source, WaveformType& current, const Spec& spec)
-    {
-        const auto chosen = static_cast<WaveformType>(choiceOf(spec));
-        if (! forceRegen && chosen == current)
-            return false;
-
-        current = chosen;
-        WavetableGenerator::generateWavetable(source, chosen);
-        return true;
-    };
-
-    for (size_t i = 0; i < std::size(wavetables); ++i)
+    for (size_t i = 0; i < std::size(oscillatorTables); ++i)
     {
         const auto& specs = osc[i];
-        const bool changedA = regenerate(sourceA[i], currentWaveformTypes[i], specs.waveform);
-        const bool changedB = regenerate(sourceB[i], currentWaveformTypesB[i], specs.waveformB);
-
+        const auto a = static_cast<WaveformType>(choiceOf(specs.waveform));
+        const auto b = static_cast<WaveformType>(choiceOf(specs.waveformB));
         const float morph = modulated(specs.morph);
-        if (changedA || changedB || ! juce::exactlyEqual(morph, lastMorph[i]))
-            blendWavetable(i, morph);
+        auto& tables = oscillatorTables[i];
+
+        if (a == tables.a && b == tables.b && juce::exactlyEqual(morph, tables.morph))
+            continue;
+
+        tables.a = a;
+        tables.b = b;
+        tables.morph = morph;
+        tables.blendedLevels = 0;   // every blended level is stale
     }
 }
 
-void ModulateSynth::blendWavetable(size_t oscIndex, float morph)
+// Blends only the levels the voices ask for
+const float* ModulateSynth::tableFor(int oscIndex, int level)
 {
-    const int    n   = wavetables[oscIndex].getNumSamples();
-    const float* a   = sourceA[oscIndex].getReadPointer(0);
-    const float* b   = sourceB[oscIndex].getReadPointer(0);
-    float*       out = wavetables[oscIndex].getWritePointer(0);
+    auto& tables = oscillatorTables[oscIndex];
+    const auto& a = WavetableBank::get(tables.a);
+    const auto& b = WavetableBank::get(tables.b);
 
-    for (int s = 0; s < n; ++s)
-        out[s] = a[s] + morph * (b[s] - a[s]);
+    // All A or all B: read the bank, no blend
+    if (tables.a == tables.b || tables.morph <= 0.0f)
+        return a.getReadPointer(level);
 
-    lastMorph[oscIndex] = morph;
+    if (tables.morph >= 1.0f)
+        return b.getReadPointer(level);
+
+    if ((tables.blendedLevels & (1u << level)) == 0)
+    {
+        auto* out = tables.blended.getWritePointer(level);
+        juce::FloatVectorOperations::copyWithMultiply(out, a.getReadPointer(level), 1.0f - tables.morph, WavetableBank::size);
+        juce::FloatVectorOperations::addWithMultiply(out, b.getReadPointer(level), tables.morph, WavetableBank::size);
+        tables.blendedLevels |= 1u << level;
+    }
+
+    return tables.blended.getReadPointer(level);
 }
 
 void ModulateSynth::publishLive()

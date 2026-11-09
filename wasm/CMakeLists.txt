@@ -72,7 +72,11 @@ add_build_info(Engine)
 
 target_compile_definitions(Engine PRIVATE JUCE_STANDALONE_APPLICATION=1 PLUGIN_VERSION="${pluginVersion}")
 
-target_link_libraries(Engine PRIVATE juce::juce_audio_basics)
+target_link_libraries(Engine PRIVATE juce::juce_audio_basics juce::juce_dsp)
+
+# Size over speed, for the demo's download; the link step optimises too
+target_compile_options(Engine PRIVATE $<$<CONFIG:Release>:-Oz>)
+target_link_options(Engine PRIVATE $<$<CONFIG:Release>:-Oz>)
 
 # A bare .wasm, no Emscripten JS
 target_link_options(Engine PRIVATE --no-entry -sSTANDALONE_WASM)

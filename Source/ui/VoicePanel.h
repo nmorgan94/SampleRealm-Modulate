@@ -11,8 +11,7 @@ class AudioPluginAudioProcessor;
 class VoicePanel : public juce::Component
 {
 public:
-    VoicePanel(AudioPluginAudioProcessor& proc,
-               juce::AudioProcessorValueTreeState& apvts)
+    explicit VoicePanel(AudioPluginAudioProcessor& proc)
         : coarsePitchSlider(proc, ParameterSpecs::coarsePitch.id),
           glideSlider(proc, ParameterSpecs::glideTime.id)
     {
@@ -23,22 +22,22 @@ public:
 
         voicesDisplay.setLabel("VOICES");
         voicesDisplay.setShowSign(false);
-        voicesDisplay.attachToParameter(proc, apvts, ParameterSpecs::numVoices.id);
+        voicesDisplay.attachToParameter(proc, ParameterSpecs::numVoices.id);
         addAndMakeVisible(voicesDisplay);
 
         unisonDisplay.setLabel("UNISON");
         unisonDisplay.setShowSign(false);
-        unisonDisplay.attachToParameter(proc, apvts, ParameterSpecs::unisonVoices.id);
+        unisonDisplay.attachToParameter(proc, ParameterSpecs::unisonVoices.id);
         addAndMakeVisible(unisonDisplay);
 
         detuneDisplay.setLabel("DETUNE");
         detuneDisplay.setShowSign(false);
-        detuneDisplay.attachToParameter(proc, apvts, ParameterSpecs::unisonDetune.id);
+        detuneDisplay.attachToParameter(proc, ParameterSpecs::unisonDetune.id);
         addAndMakeVisible(detuneDisplay);
 
         spreadDisplay.setLabel("SPREAD");
         spreadDisplay.setShowSign(false);
-        spreadDisplay.attachToParameter(proc, apvts, ParameterSpecs::unisonSpread.id);
+        spreadDisplay.attachToParameter(proc, ParameterSpecs::unisonSpread.id);
         addAndMakeVisible(spreadDisplay);
 
         coarsePitchLabel.setText("Pitch", juce::dontSendNotification);
@@ -49,7 +48,7 @@ public:
         addAndMakeVisible(coarsePitchSlider);
 
         coarsePitchAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::coarsePitch.id, coarsePitchSlider);
+            proc.getAPVTS(), ParameterSpecs::coarsePitch.id, coarsePitchSlider);
 
         glideLabel.setText("Glide", juce::dontSendNotification);
         glideLabel.setJustificationType(juce::Justification::centred);
@@ -59,7 +58,7 @@ public:
         addAndMakeVisible(glideSlider);
 
         glideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::glideTime.id, glideSlider);
+            proc.getAPVTS(), ParameterSpecs::glideTime.id, glideSlider);
     }
 
     void paint(juce::Graphics& g) override

@@ -17,11 +17,9 @@ class Oscillator : public juce::Component,
 {
 public:
     Oscillator(AudioPluginAudioProcessor& proc,
-               juce::AudioProcessorValueTreeState& apvts,
                const ParameterSpecs::Oscillator& specs,
                const juce::String& labelText)
         : processorRef(proc),
-          apvtsRef(apvts),
           waveformAID(specs.waveform.id),
           waveformBID(specs.waveformB.id),
           morphID(specs.morph.id),
@@ -48,12 +46,13 @@ public:
         addAndMakeVisible(morphSlider);
 
         addAndMakeVisible(semitoneDisplay);
-        semitoneDisplay.attachToParameter(proc, apvts, specs.pitch.id);
+        semitoneDisplay.attachToParameter(proc, specs.pitch.id);
 
         fineDisplay.setLabel("FIN");
         addAndMakeVisible(fineDisplay);
-        fineDisplay.attachToParameter(proc, apvts, specs.fine.id);
+        fineDisplay.attachToParameter(proc, specs.fine.id);
 
+        auto& apvts = proc.getAPVTS();
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
             apvts, specs.enable.id, enableButton);
         waveformAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
@@ -176,14 +175,15 @@ private:
     // Runs on the message thread so the display never reads the audio thread's buffers.
     void updateDisplaySources()
     {
-        const int aIndex = static_cast<int>(apvtsRef.getRawParameterValue(waveformAID)->load());
+        auto& apvts = processorRef.getAPVTS();
+        const int aIndex = static_cast<int>(apvts.getRawParameterValue(waveformAID)->load());
         if (aIndex != displayTypeA)
         {
             WavetableGenerator::generateWavetable(displaySourceA, static_cast<WaveformType>(aIndex));
             displayTypeA = aIndex;
         }
 
-        const int bIndex = static_cast<int>(apvtsRef.getRawParameterValue(waveformBID)->load());
+        const int bIndex = static_cast<int>(apvts.getRawParameterValue(waveformBID)->load());
         if (bIndex != displayTypeB)
         {
             WavetableGenerator::generateWavetable(displaySourceB, static_cast<WaveformType>(bIndex));
@@ -238,7 +238,6 @@ private:
     }
     
     AudioPluginAudioProcessor& processorRef;
-    juce::AudioProcessorValueTreeState& apvtsRef;
     juce::String waveformAID;
     juce::String waveformBID;
     juce::String morphID;

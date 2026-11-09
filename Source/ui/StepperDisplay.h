@@ -144,23 +144,21 @@ public:
 
     // Two-way binding to an integer APVTS parameter: initialises from the current
     // value and writes changes back to the host.
-    void attachToParameter(AudioPluginAudioProcessor& proc,
-                           juce::AudioProcessorValueTreeState& apvts,
-                           const juce::String& paramID)
+    void attachToParameter(AudioPluginAudioProcessor& proc, const juce::String& paramID)
     {
         processor = &proc;
         parameterID = paramID;
 
-        if (auto* param = dynamic_cast<juce::AudioParameterInt*>(apvts.getParameter(paramID)))
+        if (auto* param = dynamic_cast<juce::AudioParameterInt*>(getParameter()))
         {
             const auto range = param->getNormalisableRange();
             setRange(juce::roundToInt(range.start), juce::roundToInt(range.end));
             setValue(param->get());
         }
 
-        onValueChange = [this, &apvts, paramID](int newValue)
+        onValueChange = [this](int newValue)
         {
-            if (auto* param = apvts.getParameter(paramID))
+            if (auto* param = getParameter())
                 param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(newValue)));
 
             updateModulationRangeFromValue();

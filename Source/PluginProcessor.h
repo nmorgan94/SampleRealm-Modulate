@@ -82,13 +82,13 @@ public:
     }
 
     ModulateSynth::Curves getLFOCurves() const { return lfoCurveState.getCurves(); }
-    
-    juce::AudioProcessorValueTreeState apvts;
 
 private:
     static inline const juce::Identifier modMatrixStateID { "ModMatrix" };
     static inline const juce::Identifier lfoCurvesStateID { "LFOCurves" };
     //==============================================================================
+    juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters",
+                                               Parameters::createLayout() };
     juce::UndoManager undoManager;
     ModulationManager modulationManager;
     LFOCurveState lfoCurveState;

@@ -96,11 +96,11 @@ private:
         slider.addListener(this);
         addAndMakeVisible(slider);
         
-        auto* param = processor.apvts.getParameter(paramID);
+        auto* param = processor.getAPVTS().getParameter(paramID);
         if (param != nullptr)
         {
             sliderAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-                processor.apvts, paramID, slider));
+                processor.getAPVTS(), paramID, slider));
         }
         
         label.setText(labelText, juce::dontSendNotification);

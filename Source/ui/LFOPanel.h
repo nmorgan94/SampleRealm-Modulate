@@ -29,7 +29,7 @@ class LFOPanel : public juce::Component,
                  public CurveEditor::Listener
 {
 public:
-    LFOPanel(AudioPluginAudioProcessor& proc) : processor(proc)
+    LFOPanel(AudioPluginAudioProcessor& proc) : processor(proc), apvts(proc.getAPVTS())
     {
         for (size_t i = 0; i < 4; ++i)
         {
@@ -73,7 +73,7 @@ public:
             };
             
             modeAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
-                processor.apvts, ParameterSpecs::lfo[i].mode.id, *modeComboBoxes.back()));
+                apvts, ParameterSpecs::lfo[i].mode.id, *modeComboBoxes.back()));
             
             auto syncButton = std::make_unique<juce::ToggleButton>("SYNC");
             syncButton->getProperties().set("pillToggle", true);
@@ -81,7 +81,7 @@ public:
             syncButtons.push_back(std::move(syncButton));
             
             syncAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
-                processor.apvts, ParameterSpecs::lfo[i].sync.id, *syncButtons.back()));
+                apvts, ParameterSpecs::lfo[i].sync.id, *syncButtons.back()));
             
             createModulatableControl(container.get(), ParameterSpecs::lfo[i].rate, "Rate", rateSliders, rateLabels, rateAttachments);
             createTensionControl(container.get(), i);
@@ -132,7 +132,7 @@ public:
                 ? CurveEditor::defaultControlPoints()
                 : savedPoints);
 
-            if (auto* param = processor.apvts.getParameter(ParameterSpecs::lfo[i].tension.id))
+            if (auto* param = apvts.getParameter(ParameterSpecs::lfo[i].tension.id))
                 curveEditors[i]->setTension(param->getValue());
 
             updateLFORateControl(i);
@@ -222,7 +222,7 @@ private:
         };
         
         tensionAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            processor.apvts, ParameterSpecs::lfo[lfoIndex].tension.id, *tensionSliders.back()));
+            apvts, ParameterSpecs::lfo[lfoIndex].tension.id, *tensionSliders.back()));
     }
     
     void createModulatableControl(juce::Component* container, const ParameterSpecs::Spec& spec,
@@ -237,7 +237,7 @@ private:
         labels.push_back(createLabel(labelText, container));
         sliders.back()->attachLabel(*labels.back());
         attachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            processor.apvts, spec.id, *sliders.back()));
+            apvts, spec.id, *sliders.back()));
     }
     
     std::unique_ptr<juce::Label> createLabel(const juce::String& text, juce::Component* container)
@@ -258,7 +258,7 @@ private:
         const auto& shape = LfoCurve::shapes[static_cast<size_t>(shapeIndex)];
         const std::vector<LfoCurve::Point> points(shape.points.begin(), shape.points.end());
 
-        if (auto* param = processor.apvts.getParameter(ParameterSpecs::lfo[lfoIndex].tension.id))
+        if (auto* param = apvts.getParameter(ParameterSpecs::lfo[lfoIndex].tension.id))
             param->setValueNotifyingHost(param->convertTo0to1(shape.tension));
 
         curveEditors[lfoIndex]->setControlPoints(points);
@@ -277,10 +277,11 @@ private:
 
         rateSliders[lfoIndex]->setParameterID(paramID);
         rateAttachments[lfoIndex] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            processor.apvts, paramID, *rateSliders[lfoIndex]);
+            apvts, paramID, *rateSliders[lfoIndex]);
     }
     
     AudioPluginAudioProcessor& processor;
+    juce::AudioProcessorValueTreeState& apvts;
     CustomLFOTabbedComponent tabbedComponent;
     std::vector<std::unique_ptr<juce::Component>> tabContainers;
     std::vector<std::unique_ptr<CurveEditor>> curveEditors;

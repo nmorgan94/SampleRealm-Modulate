@@ -10,8 +10,7 @@ class NoisePanel : public juce::Component,
                    private juce::Button::Listener
 {
 public:
-    NoisePanel(AudioPluginAudioProcessor& proc,
-               juce::AudioProcessorValueTreeState& apvts)
+    explicit NoisePanel(AudioPluginAudioProcessor& proc)
         : levelSlider(proc, ParameterSpecs::noiseLevel.id)
     {
         titleLabel.setText("NOISE", juce::dontSendNotification);
@@ -29,6 +28,7 @@ public:
         levelSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         addAndMakeVisible(levelSlider);
 
+        auto& apvts = proc.getAPVTS();
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
             apvts, ParameterSpecs::noiseEnable.id, enableButton);
         typeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(

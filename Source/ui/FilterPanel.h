@@ -13,8 +13,7 @@ class FilterPanel : public juce::Component,
                     private juce::Timer
 {
 public:
-    FilterPanel(AudioPluginAudioProcessor& proc,
-                juce::AudioProcessorValueTreeState& apvts)
+    explicit FilterPanel(AudioPluginAudioProcessor& proc)
         : processor(proc),
           driveSlider(proc, ParameterSpecs::drive.id),
           cutoffSlider(proc, ParameterSpecs::filterCutoff.id),
@@ -47,6 +46,7 @@ public:
         hqButton.getProperties().set("pillToggle", true);
         addAndMakeVisible(hqButton);
 
+        auto& apvts = proc.getAPVTS();
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
             apvts, ParameterSpecs::filterEnable.id, enableButton);
         modeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(

@@ -11,24 +11,24 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     addAndMakeVisible(header);
 
     osc1 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, ParameterSpecs::osc[0], "OSC 1");
+        processorRef, ParameterSpecs::osc[0], "OSC 1");
     addAndMakeVisible(osc1.get());
 
     osc2 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, ParameterSpecs::osc[1], "OSC 2");
+        processorRef, ParameterSpecs::osc[1], "OSC 2");
     addAndMakeVisible(osc2.get());
 
     osc3 = std::make_unique<Oscillator>(
-        processorRef, processorRef.apvts, ParameterSpecs::osc[2], "OSC 3");
+        processorRef, ParameterSpecs::osc[2], "OSC 3");
     addAndMakeVisible(osc3.get());
     
-    noisePanel = std::make_unique<NoisePanel>(processorRef, processorRef.apvts);
+    noisePanel = std::make_unique<NoisePanel>(processorRef);
     addAndMakeVisible(noisePanel.get());
 
-    filterPanel = std::make_unique<FilterPanel>(processorRef, processorRef.apvts);
+    filterPanel = std::make_unique<FilterPanel>(processorRef);
     addAndMakeVisible(filterPanel.get());
 
-    voicePanel = std::make_unique<VoicePanel>(processorRef, processorRef.apvts);
+    voicePanel = std::make_unique<VoicePanel>(processorRef);
     addAndMakeVisible(voicePanel.get());
     
     envelopePanel = std::make_unique<EnvelopePanel>(processorRef);

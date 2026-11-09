@@ -20,11 +20,6 @@ export interface UiInfo {
   params: ParamInfo[];
 }
 
-export interface About extends Pick<UiInfo, 'version' | 'commit' | 'build'> {
-  // "VST3 in Ableton Live", or where else the editor is running
-  running: string;
-}
-
 // Linear peak per channel since the last level
 export interface Level {
   peaks: number[];
@@ -84,6 +79,8 @@ export interface PresetBackend {
   onStatus(listener: (status: PresetStatus) => void): () => void;
   // Factory then user presets, rescanning the user ones
   list(): Promise<PresetEntry[]>;
+  // The current preset, if it's still listed
+  current(): Promise<PresetEntry | null>;
   load(preset: PresetEntry): Promise<void>;
   loadInit(): Promise<void>;
   loadNext(): Promise<void>;
@@ -101,7 +98,8 @@ export const isSamePreset = (a: PresetEntry, b: PresetEntry) => a.name === b.nam
 
 export interface ModulateBackend {
   info: UiInfo;
-  about: About;
+  // "VST3 in Ableton Live", or where else the editor is running
+  running: string;
   presets: PresetBackend;
   param(id: string): ParamInfo;
   // Real values, not 0..1

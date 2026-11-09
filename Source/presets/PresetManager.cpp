@@ -368,6 +368,12 @@ void PresetManager::audioProcessorParameterChanged (juce::AudioProcessor*, int, 
     markModified();
 }
 
+void PresetManager::audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails& details)
+{
+    if (details.nonParameterStateChanged)
+        markModified();
+}
+
 //==============================================================================
 void PresetManager::addPresetInfoTo (juce::ValueTree& stateCopy) const
 {

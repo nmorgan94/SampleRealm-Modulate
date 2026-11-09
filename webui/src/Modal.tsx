@@ -25,7 +25,7 @@ export function Modal({ label, titleInset, panel, onClose, onPanelKey, focus, ch
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/60"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-overlay-dim"
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         // Nothing behind the overlay gets keys
@@ -34,7 +34,7 @@ export function Modal({ label, titleInset, panel, onClose, onPanelKey, focus, ch
         else onPanelKey?.(e);
       }}
     >
-      <div ref={panelRef} tabIndex={-1} role="dialog" aria-label={label} className="relative rounded-lg bg-panel outline-none ring-1 ring-inset ring-accent" style={panel}>
+      <div ref={panelRef} tabIndex={-1} role="dialog" aria-label={label} className="relative rounded-lg bg-overlay-panel outline-none ring-1 ring-inset ring-overlay-outline" style={panel}>
         <div className="absolute flex items-center font-bold" style={{ left: titleInset.x, top: titleInset.y, right: titleInset.x, height: TITLE_HEIGHT, fontSize: juceHeight(14) }}>
           {label}
         </div>

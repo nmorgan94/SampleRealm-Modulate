@@ -1,5 +1,5 @@
 // Mirrors Source/ui/PresetActions.cpp
-import { isSamePreset, type PresetBackend, type PresetEntry } from './backend.ts';
+import type { PresetBackend, PresetEntry } from './backend.ts';
 import type { MenuItem } from './Menu.tsx';
 import type { Prompt } from './PromptOverlay.tsx';
 
@@ -14,7 +14,7 @@ export function presetActions(presets: PresetBackend, prompt: Prompt): PresetAct
   };
 
   const currentUserPreset = async () => {
-    const current = (await presets.list()).find((preset) => isSamePreset(preset, presets.status().current));
+    const current = await presets.current();
     return current && !current.isFactory ? current : undefined;
   };
 

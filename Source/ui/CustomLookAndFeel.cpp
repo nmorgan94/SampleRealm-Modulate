@@ -1,4 +1,5 @@
 #include "CustomLookAndFeel.h"
+#include "HeaderBar.h"
 #include <BinaryData.h>
 #include <map>
 
@@ -27,6 +28,34 @@ namespace
 }
 
 //==============================================================================
+CustomLookAndFeel::CustomLookAndFeel()
+{
+    setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xff00ff41));
+    setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour(0xff2a2a2a));
+    setColour(juce::Slider::thumbColourId, juce::Colour(0xff00ff41));
+
+    setColour(juce::BubbleComponent::backgroundColourId, juce::Colour(0xff2a2a2a));
+    setColour(juce::BubbleComponent::outlineColourId, juce::Colour(0xff00ff41));
+    setColour(juce::TooltipWindow::textColourId, juce::Colour(0xff00ff41));
+
+    setColour(ModalOverlay::dimColourId, juce::Colours::black.withAlpha(0.6f));
+    setColour(ModalOverlay::panelColourId, juce::Colour(0xff1a1a1a));
+    setColour(ModalOverlay::outlineColourId, juce::Colour(0xff00ff41));
+
+    setColour(HeaderBar::backgroundColourId, juce::Colours::transparentBlack);
+    setColour(HeaderBar::titleColourId, juce::Colour(0xff00ff00));
+
+    setColour(juce::TextEditor::backgroundColourId, juce::Colours::black);
+    setColour(juce::TextEditor::textColourId, juce::Colours::white);
+    setColour(juce::TextEditor::outlineColourId, juce::Colour(0xff3a3a3a));
+    setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour(0xff00ff41));
+    setColour(juce::TextEditor::highlightColourId, juce::Colour(0xff00ff41).withAlpha(0.3f));
+    setColour(juce::TextEditor::highlightedTextColourId, juce::Colours::white);
+    setColour(juce::CaretComponent::caretColourId, juce::Colour(0xff00ff41));
+
+    setColour(juce::ScrollBar::thumbColourId, juce::Colour(0xff3a3a3a));
+}
+
 juce::FontOptions CustomLookAndFeel::orbitron (float weight)
 {
     return juce::FontOptions (orbitronTypeface (weight));

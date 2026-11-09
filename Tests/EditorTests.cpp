@@ -63,21 +63,19 @@ TEST_CASE_METHOD (ProcessorFixture, "The header fits the title, the preset bar a
     std::vector<HeaderBar*> headers;
     findAll (editor, headers);
     REQUIRE (headers.size() == 1);
-    CHECK (headers[0]->getBounds() == juce::Rectangle<int> (0, 0, AudioPluginAudioProcessorEditor::width, HeaderBar::height));
 
-    std::vector<juce::Label*> labels;
-    findAll (*headers[0], labels);
-    const auto title = std::ranges::find_if (labels, [] (auto* label) { return label->getText() == "SampleRealm: MODULATE"; });
-    REQUIRE (title != labels.end());
+    const auto& layout = AudioPluginAudioProcessorEditor::headerLayout;
+    CHECK (headers[0]->getBounds() == juce::Rectangle<int> (0, 0, AudioPluginAudioProcessorEditor::width, layout.height));
+    CHECK (headers[0]->getTitle() == "SampleRealm: MODULATE");
 
-    // Squeezed no further than the label allows
-    const auto titleWidth = juce::GlyphArrangement::getStringWidth (editor.getLookAndFeel().getLabelFont (**title), (*title)->getText());
-    CHECK (titleWidth * (*title)->getMinimumHorizontalScale() <= static_cast<float> ((*title)->getWidth()));
+    // Squeezed no further than HeaderBar's 70%, so not cut short
+    const juce::Font titleFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight (layout.titleHeight));
+    CHECK (juce::GlyphArrangement::getStringWidth (titleFont, headers[0]->getTitle()) * 0.7f <= static_cast<float> (layout.titleWidth));
 
     std::vector<PresetBar*> bars;
     findAll (*headers[0], bars);
     REQUIRE (bars.size() == 1);
-    CHECK (bars[0]->getX() > (*title)->getRight());
+    CHECK (bars[0]->getX() > layout.edge + layout.titleWidth);
 
     std::vector<MasterMeter*> meters;
     findAll (*headers[0], meters);

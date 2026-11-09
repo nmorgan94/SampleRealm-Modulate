@@ -3,51 +3,46 @@
 
 namespace
 {
-    constexpr int edge = 10;
-    constexpr int gap = 12;
-    constexpr int titleWidth = 400;
-    constexpr int versionTop = 60, versionHeight = 12;
-    constexpr int meterWidth = 90;
-    constexpr int controlsHeight = 30;
+    constexpr float minimumTitleScale = 0.7f;
 }
 
-HeaderBar::HeaderBar (const juce::String& titleText, PresetManager& presets, PromptOverlay& o, std::function<void()> m,
-                      const juce::String& about, PeakMeter& source, juce::AudioProcessorValueTreeState& apvts)
-    : prompt (o), showManual (std::move (m)), aboutText (about),
-      presetActions (presets, prompt), presetBar (presets, presetActions), meter (source, apvts)
+HeaderBar::HeaderBar (const juce::String& titleText, const Layout& l, PresetManager& presets, PromptOverlay& o,
+                      std::function<void()> m, const juce::String& about, juce::Component& meterToShow)
+    : title (titleText), layout (l), prompt (o), showManual (std::move (m)), aboutText (about),
+      presetActions (presets, prompt), presetBar (presets, presetActions), meter (meterToShow)
 {
-    title.setText (titleText, juce::dontSendNotification);
-    title.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight (36.0f));
-    title.setColour (juce::Label::textColourId, juce::Colour (0xff00ff00));
-    title.setJustificationType (juce::Justification::centredLeft);
-    title.setMinimumHorizontalScale (0.7f);
-    title.setBorderSize ({});
-
-    version.setText ("v" JucePlugin_VersionString, juce::dontSendNotification);
-    version.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::regularWeight).withPointHeight (9.0f));
-    version.setColour (juce::Label::textColourId, juce::Colour (0xff00ff41).withAlpha (0.4f));
-    version.setJustificationType (juce::Justification::centredLeft);
-    version.setBorderSize ({});
+    // For screen readers, as the title is painted
+    setTitle (title);
 
     menuButton.onClick = [this] { showMenu(); };
 
-    addAndMakeVisible (title);
-    addAndMakeVisible (version);
     addAndMakeVisible (presetBar);
     addAndMakeVisible (menuButton);
     addAndMakeVisible (meter);
 }
 
+void HeaderBar::paint (juce::Graphics& g)
+{
+    g.fillAll (findColour (backgroundColourId));
+
+    // The meter's repaints reach here too
+    const auto titleArea = getLocalBounds().withTrimmedLeft (layout.edge).withWidth (layout.titleWidth);
+    if (! g.clipRegionIntersects (titleArea))
+        return;
+
+    // Painted, so the colour comes from the LookAndFeel
+    g.setColour (findColour (titleColourId));
+    g.setFont (juce::Font (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight (layout.titleHeight)));
+    g.drawFittedText (title, titleArea, juce::Justification::centredLeft, 1, minimumTitleScale);
+}
+
 void HeaderBar::resized()
 {
-    auto bounds = getLocalBounds().reduced (edge, 0);
+    auto bounds = getLocalBounds().reduced (layout.edge, 0);
+    meter.setBounds (bounds.removeFromRight (layout.meterWidth).reduced (0, layout.meterInset));
 
-    title.setBounds (bounds.withWidth (titleWidth));
-    version.setBounds (bounds.getX(), versionTop, titleWidth, versionHeight);
-    meter.setBounds (bounds.removeFromRight (meterWidth).reduced (0, 6));
-
-    auto controls = bounds.withTrimmedLeft (titleWidth + gap).withTrimmedRight (gap);
-    controls = controls.withSizeKeepingCentre (controls.getWidth(), controlsHeight);
+    auto controls = bounds.withTrimmedLeft (layout.titleWidth + layout.gap).withTrimmedRight (layout.gap);
+    controls = controls.withSizeKeepingCentre (controls.getWidth(), layout.controlsHeight);
     menuButton.setBounds (controls.removeFromRight (28));
     controls.removeFromRight (4);
     presetBar.setBounds (controls);

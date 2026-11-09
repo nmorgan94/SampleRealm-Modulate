@@ -60,7 +60,7 @@ void AudioPluginAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
     
-    header.setBounds(bounds.removeFromTop(HeaderBar::height));
+    header.setBounds(bounds.removeFromTop(headerLayout.height));
     
     // Padding
     bounds.reduce(10, 5);

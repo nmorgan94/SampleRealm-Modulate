@@ -45,6 +45,7 @@ function pluginPresets(): PresetBackend {
     status: () => status,
     onStatus: listeners.add,
     list: () => call<PresetEntry[]>('presetList'),
+    current: async () => (await call<PresetEntry | null | undefined>('presetCurrent')) ?? null,
     load: async (preset) => void (await call('presetLoad', preset)),
     loadInit: async () => void (await call('presetInit')),
     loadNext: async () => void (await call('presetStep', 1)),
@@ -80,7 +81,7 @@ export function pluginBackend(): ModulateBackend {
 
   return {
     info,
-    about: { version: info.version, commit: info.commit, build: info.build, running: initial<string>('running') },
+    running: initial<string>('running'),
     presets: pluginPresets(),
     param,
     getValue: (id) => slider(id).getScaledValue(),

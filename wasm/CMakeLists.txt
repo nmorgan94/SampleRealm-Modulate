@@ -61,6 +61,7 @@ CPMAddPackage(
 
 add_executable(Engine
     Engine.cpp
+    BuildCommit.cpp
     ../Source/dsp/ModulateSynth.cpp
     ../Source/dsp/WavetableVoice.cpp)
 

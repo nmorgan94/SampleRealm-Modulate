@@ -175,6 +175,17 @@ test('user presets save, rename and delete, and outlast the page', async () => {
   assert.equal(storage.items.get(STORAGE_KEY), '[]');
 });
 
+test("the current preset is reported while it's listed", async () => {
+  const { presets } = setUp();
+  assert.equal(await presets.current(), null);
+
+  await presets.save('Mine', 'Lead');
+  assert.deepEqual(await presets.current(), named(await presets.list(), 'Mine'));
+
+  await presets.remove(named(await presets.list(), 'Mine'));
+  assert.equal(await presets.current(), null);
+});
+
 test("user presets can't take a factory name", async () => {
   const { presets } = setUp();
 
@@ -209,6 +220,36 @@ test('next and previous skip a user preset deleted in another tab', async () => 
 
   await presets.loadNext();
   assert.equal(presets.status().current.name, FACTORY_NAMES[0]);
+});
+
+test('saving, renaming and deleting keep what another tab saved', async () => {
+  const { presets, storage } = setUp();
+  await presets.save('Mine', '');
+
+  const otherTab = setUp(storage).presets;
+  assert.equal(await otherTab.save('Theirs', ''), null);
+
+  const users = () => JSON.parse(storage.items.get(STORAGE_KEY)!).map((stored: { name: string }) => stored.name);
+
+  assert.equal(await presets.save('Mine', ''), null);
+  assert.deepEqual(users(), ['Mine', 'Theirs']);
+
+  assert.equal(await presets.rename({ name: 'Mine', category: '', isFactory: false }, 'Ours'), null);
+  assert.deepEqual(users(), ['Ours', 'Theirs']);
+
+  assert.equal(await presets.remove({ name: 'Ours', category: '', isFactory: false }), null);
+  assert.deepEqual(users(), ['Theirs']);
+});
+
+test('without storage, user presets last until the page closes', async () => {
+  const refusing: PresetStorage = { getItem: () => null, setItem: () => { throw new Error('Refused'); } };
+
+  for (const storage of [refusing, undefined]) {
+    const { presets } = workletBackend(info, factory, storage);
+    assert.equal(await presets.save('Mine', ''), null);
+    assert.equal(await presets.exists('Mine'), true);
+    assert.deepEqual(await presets.current(), named(await presets.list(), 'Mine'));
+  }
 });
 
 test('unreadable storage leaves only the factory presets', async () => {

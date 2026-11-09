@@ -10,6 +10,7 @@
 #include "ui/VoicePanel.h"
 #include "ui/About.h"
 #include "ui/HeaderBar.h"
+#include "ui/MasterMeter.h"
 #include "ui/Manual.h"
 #include "ui/PromptOverlay.h"
 
@@ -20,6 +21,10 @@ class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor,
 {
 public:
     static constexpr int width = 900, height = 600;
+
+    // As HEADER_LAYOUT in webui/src/ModulateEditor.tsx
+    static constexpr HeaderBar::Layout headerLayout { .height = 70, .edge = 10, .titleWidth = 400, .titleHeight = 36.0f,
+                                                      .gap = 12, .controlsHeight = 30, .meterWidth = 90, .meterInset = 6 };
 
     explicit AudioPluginAudioProcessorEditor (AudioPluginAudioProcessor&);
     ~AudioPluginAudioProcessorEditor() override;
@@ -54,8 +59,9 @@ private:
 
     PromptOverlay prompt;
     ManualOverlay manual;
-    HeaderBar header { "SampleRealm: MODULATE", processorRef.getPresetManager(), prompt, [this] { manual.show(); },
-                       About::text (processorRef), processorRef.getOutputMeter(), processorRef.getAPVTS() };
+    MasterMeter masterMeter { processorRef.getOutputMeter(), processorRef.getAPVTS() };
+    HeaderBar header { "SampleRealm: MODULATE", headerLayout, processorRef.getPresetManager(), prompt, [this] { manual.show(); },
+                       About::text (processorRef), masterMeter };
 
     juce::uint32 lastStateChange = processorRef.getStateChanges();
 

@@ -127,6 +127,17 @@ TEST_CASE_METHOD (PresetFixture, "Moving a parameter marks the preset modified u
     CHECK_THAT (cutoff(), WithinAbs (8000.0, 1.0e-1));
 }
 
+TEST_CASE_METHOD (PresetFixture, "Changing state outside the parameters marks the preset modified", "[presets]")
+{
+    REQUIRE (presets.loadPreset (presets.find ("Wobble", true).value()));
+
+    processor.updateHostDisplay (juce::AudioProcessor::ChangeDetails{}.withProgramChanged (true));
+    CHECK_FALSE (presets.isModified());
+
+    processor.updateHostDisplay (juce::AudioProcessor::ChangeDetails{}.withNonParameterStateChanged (true));
+    CHECK (presets.isModified());
+}
+
 // The processor's own manager, which hears about modulation and curves
 TEST_CASE_METHOD (ProcessorFixture, "Changing modulation or a curve marks the preset modified", "[presets]")
 {

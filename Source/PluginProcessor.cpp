@@ -23,7 +23,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
     apvts.state.addListener (this);
 
     // Parameters reach the PresetManager as parameters; modulation and curves only as state
-    modulationManager.onEdit = lfoCurveState.onEdit = [this] { presetManager.markModified(); };
+    modulationManager.onEdit = lfoCurveState.onEdit = [this] { updateHostDisplay (ChangeDetails{}.withNonParameterStateChanged (true)); };
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()

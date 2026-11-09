@@ -54,7 +54,7 @@ function Overlay({ close }: { close(): void }) {
       <div
         ref={scroller}
         tabIndex={-1}
-        className="absolute overflow-y-auto outline-none [scrollbar-color:var(--color-widget-border)_transparent] [scrollbar-width:thin]"
+        className="absolute overflow-y-auto outline-none [scrollbar-color:var(--color-scrollbar)_transparent] [scrollbar-width:thin]"
         style={SCROLLER}
       >
         <Page blocks={BLOCKS} />

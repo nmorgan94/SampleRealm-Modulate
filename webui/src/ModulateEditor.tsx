@@ -5,9 +5,10 @@ import { Cross, MOD_TARGET, ModulationDragContext, type ModulationDrag } from '.
 import { EDITOR_HEIGHT, EDITOR_WIDTH, EditorRootContext, pointIn } from './editorRoot.ts';
 import { EnvelopePanel } from './EnvelopePanel.tsx';
 import { FilterPanel } from './FilterPanel.tsx';
-import { HeaderBar } from './HeaderBar.tsx';
+import { HeaderBar, type HeaderLayout } from './HeaderBar.tsx';
 import { LfoPanel } from './LfoPanel.tsx';
 import { useManual } from './ManualOverlay.tsx';
+import { MasterMeter } from './MasterMeter.tsx';
 import { makeDefaultRange } from './modulation.ts';
 import { NoisePanel } from './NoisePanel.tsx';
 import { OscillatorPanel } from './OscillatorPanel.tsx';
@@ -16,6 +17,18 @@ import { usePrompt } from './PromptOverlay.tsx';
 import { VoicePanel } from './VoicePanel.tsx';
 
 export { EDITOR_HEIGHT, EDITOR_WIDTH };
+
+// AudioPluginAudioProcessorEditor::headerLayout
+const HEADER_LAYOUT: HeaderLayout = {
+  height: 70,
+  edge: 10,
+  titleWidth: 400,
+  titleHeight: 36,
+  gap: 12,
+  controlsHeight: 30,
+  meterWidth: 90,
+  meterInset: 6,
+};
 
 type Dragging = { source: ModulationSource; index: number; x: number; y: number };
 
@@ -61,7 +74,15 @@ export const ModulateEditor = memo(function ModulateEditor({ backend }: { backen
     <EditorRootContext.Provider value={root}>
       <ModulationDragContext.Provider value={drag}>
         <div ref={setRoot} className="relative overflow-hidden bg-background font-display text-fg select-none" style={{ width: EDITOR_WIDTH, height: EDITOR_HEIGHT }}>
-          <HeaderBar title="SampleRealm: MODULATE" width={EDITOR_WIDTH} backend={backend} prompt={prompt} showManual={manual.showManual} />
+          <HeaderBar
+            title="SampleRealm: MODULATE"
+            width={EDITOR_WIDTH}
+            layout={HEADER_LAYOUT}
+            backend={backend}
+            prompt={prompt}
+            showManual={manual.showManual}
+            meter={(bounds) => <MasterMeter backend={backend} bounds={bounds} />}
+          />
 
           {[0, 1, 2].map((index) => (
             <OscillatorPanel key={index} backend={backend} index={index} bounds={{ left: 10, top: 75 + 176 * index, width: 250, height: index === 2 ? 168 : 166 }} />

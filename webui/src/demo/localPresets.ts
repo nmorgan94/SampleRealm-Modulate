@@ -78,10 +78,12 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
   let users: StoredPreset[] = [];
   let status: PresetStatus = { current: INIT, modified: false };
   const listeners = listenerSet<[PresetStatus]>();
+  let store = storage;
 
   const read = () => {
+    if (!store) return;
     try {
-      const stored = JSON.parse(storage?.getItem(STORAGE_KEY) ?? '[]') as StoredPreset[];
+      const stored = JSON.parse(store.getItem(STORAGE_KEY) ?? '[]') as StoredPreset[];
       users = sorted(stored.map((preset) => ({ ...preset, isFactory: false })));
     } catch {
       // Unreadable storage keeps what's already listed
@@ -90,9 +92,10 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
 
   const write = () => {
     try {
-      storage?.setItem(STORAGE_KEY, JSON.stringify(users.map(({ name, category, params, modulation, curves }) => ({ name, category, params, modulation, curves }))));
+      store?.setItem(STORAGE_KEY, JSON.stringify(users.map(({ name, category, params, modulation, curves }) => ({ name, category, params, modulation, curves }))));
     } catch {
       // Private windows can refuse storage; the presets last until the page closes
+      store = undefined;
     }
   };
 
@@ -139,6 +142,10 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
       read();
       return all();
     },
+    current: async () => {
+      read();
+      return find(status.current) ?? null;
+    },
     load: async (preset) => {
       const found = find(preset);
       if (found) load(found);
@@ -146,8 +153,12 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
     loadInit: async () => load(INIT),
     loadNext: () => step(1),
     loadPrevious: () => step(-1),
-    exists: async (name) => findUser(legalName(name)) !== undefined,
+    exists: async (name) => {
+      read();
+      return findUser(legalName(name)) !== undefined;
+    },
     save: async (name, category) => {
+      read();
       const trimmed = legalName(name);
       const error = checkName(trimmed);
       if (error) return error;
@@ -159,6 +170,7 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
       return null;
     },
     rename: async (preset, newName) => {
+      read();
       const trimmed = legalName(newName);
       const target = preset.isFactory ? undefined : findUser(preset.name);
       if (!target) return 'Only user presets can be renamed.';
@@ -176,6 +188,7 @@ export function localPresets({ factory, storage, capture, apply }: Options): Loc
       return null;
     },
     remove: async (preset) => {
+      read();
       const target = preset.isFactory ? undefined : findUser(preset.name);
       if (!target) return 'Only user presets can be deleted.';
 

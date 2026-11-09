@@ -112,7 +112,9 @@ private:
     bool step (int delta);
 
     void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override;
-    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override {}
+    /** Plugins with state outside parameters report edits to it with
+        updateHostDisplay (ChangeDetails{}.withNonParameterStateChanged (true)). */
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PresetManager)
 };

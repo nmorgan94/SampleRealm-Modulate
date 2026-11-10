@@ -80,8 +80,7 @@ private:
     float modulated(const ParameterSpecs::Spec& spec) const;
     float sourceValue(const Modulation::Assignment& assignment) const;
 
-    void configureEnvelope(ADSREnvelope& envelope, const ParameterSpecs::Envelope& specs, double sampleRate) const;
-    void startModulationSources(double sampleRate);
+    void startModulationSources();
     void releaseModulationEnvelopes();
     void resetModulationEnvelopes();
 
@@ -89,6 +88,7 @@ private:
     bool isMono() const { return currentVoiceCount == 1; }
 
     void updateLfoShapes(bool force);
+    void updateEnvelopeParameters();
     void updateLfos();
     void updateVoiceCount();
     void advanceModulationSources(int numSamples, const Transport& transport);
@@ -116,6 +116,7 @@ private:
 
     LFO lfos[numLfos];
     ADSREnvelope envelopes[numEnvelopes];
+    ADSREnvelope::Parameters envelopeParameters[numEnvelopes];
     Filter filter;
     Drive drive;
     Live live;

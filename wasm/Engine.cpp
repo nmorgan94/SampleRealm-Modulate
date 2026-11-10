@@ -174,6 +174,11 @@ EXPORT (curveValue) float curveValue (int count, float tension, float x)
     return LfoCurve::evaluate (pointsWritten (count, into), tension, x);
 }
 
+EXPORT (envelopeCurve) float envelopeCurve (float progress, float curve)
+{
+    return EnvelopeCurve::shapeProgress (progress, curve);
+}
+
 EXPORT (waveform) float* waveform (int type)
 {
     WavetableGenerator::generateWavetable (wavetable, static_cast<WaveformType> (std::clamp (type, 0, numWaveforms - 1)));

@@ -39,8 +39,10 @@ void ModulateSynth::prepare(double sampleRate, int maximumBlockSize, int numChan
 
     updateLfoShapes(true);
 
-    for (size_t i = 0; i < std::size(envelopes); ++i)
-        configureEnvelope(envelopes[i], env[i], sampleRate);
+    for (auto& envelope : envelopes)
+        envelope.setSampleRate(sampleRate);
+
+    updateEnvelopeParameters();
 
     WavetableBank::get(WaveformType::Sine);   // builds the bank here, not on the audio thread
 
@@ -77,6 +79,8 @@ void ModulateSynth::setSettings(const Settings& newSettings)
 void ModulateSynth::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi, const Transport& transport)
 {
     const auto numSamples = buffer.getNumSamples();
+
+    updateEnvelopeParameters();
 
     // These read the modulation sources before they advance
     updateLfos();
@@ -119,20 +123,11 @@ float ModulateSynth::sourceValue(const Modulation::Assignment& assignment) const
                               : envelopes[assignment.sourceIndex].getCurrentLevel();
 }
 
-void ModulateSynth::configureEnvelope(ADSREnvelope& envelope, const ParameterSpecs::Envelope& specs, double sampleRate) const
-{
-    envelope.setSampleRate(sampleRate);
-    envelope.setParameters(valueOf(specs.attack), valueOf(specs.decay), valueOf(specs.sustain), valueOf(specs.release));
-}
-
 //==============================================================================
-void ModulateSynth::startModulationSources(double sampleRate)
+void ModulateSynth::startModulationSources()
 {
-    for (size_t i = 0; i < std::size(envelopes); ++i)
-    {
-        configureEnvelope(envelopes[i], env[i], sampleRate);
-        envelopes[i].noteOn();
-    }
+    for (auto& envelope : envelopes)
+        envelope.noteOn();
 
     // Only those in trigger mode restart
     for (auto& lfoToTrigger : lfos)
@@ -165,6 +160,17 @@ void ModulateSynth::updateLfoShapes(bool force)
         lfoCurvesShown[i] = curve;
         lfoTensionsShown[i] = tension;
         lfos[i].setShape(curve.count == 0 ? std::span<const LfoCurve::Point>(LfoCurve::defaultPoints) : curve.view(), tension);
+    }
+}
+
+void ModulateSynth::updateEnvelopeParameters()
+{
+    for (size_t i = 0; i < numEnvelopes; ++i)
+    {
+        const auto& specs = env[i];
+        envelopeParameters[i] = { valueOf(specs.attack), valueOf(specs.decay), valueOf(specs.sustain), valueOf(specs.release),
+                                  valueOf(specs.attackCurve), valueOf(specs.decayCurve), valueOf(specs.releaseCurve) };
+        envelopes[i].setParameters(envelopeParameters[i]);
     }
 }
 

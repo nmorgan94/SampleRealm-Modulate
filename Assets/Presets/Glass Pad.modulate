@@ -3,8 +3,10 @@
 <PRESET name="Glass Pad" category="Pad" author="SampleRealm" formatVersion="1">
   <Parameters>
     <PARAM id="env1_attack" value="1.2"/>
+    <PARAM id="env1_attack_curve" value="-0.3"/>
     <PARAM id="env1_decay" value="1.0"/>
     <PARAM id="env1_release" value="2.5"/>
+    <PARAM id="env1_release_curve" value="0.5"/>
     <PARAM id="env1_sustain" value="0.8"/>
     <PARAM id="filter_cutoff" value="3000.0"/>
     <PARAM id="filter_resonance" value="0.1"/>

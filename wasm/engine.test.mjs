@@ -91,8 +91,8 @@ test('the ui info carries the version, the commit, the build type and every para
   assert.match(info.version, /^\d+\.\d+\.\d+$/);
   assert.match(info.commit, /^([0-9a-f]{7,}(-local)?|unknown)$/);
   assert.match(info.build, /^(Debug|Release)$/);
-  assert.equal(info.params.length, 75);
-  assert.equal(new Set(info.params.map((p) => p.id)).size, 75);
+  assert.equal(info.params.length, 87);
+  assert.equal(new Set(info.params.map((p) => p.id)).size, 87);
   assert.deepEqual(info.params.find((p) => p.id === 'glide_time'), {
     id: 'glide_time', name: 'Glide Time', kind: 'real', min: 0, max: 2, defaultValue: 0,
     step: 0.001, skew: 0.4, unit: '', choices: [],
@@ -123,6 +123,56 @@ test('a note plays at its MIDI pitch, moved by oscillator pitch, fine tune and c
     const measured = frequency(e.play(0.5).left);
     assert.ok(Math.abs(measured - expected) < 3, `${id} ${value}: ${measured} Hz`);
   }
+});
+
+test('a release curve bends the fade: positive falls fast early, negative slowly', () => {
+  const halfwayPeak = (curve) => {
+    const e = sineEngine();
+    e.set('env1_sustain', 1);
+    e.set('env1_release', 0.4);
+    e.set('env1_release_curve', curve);
+    e.midi(noteOn, 57, 100);
+    e.play(0.3);
+    e.midi(noteOff, 57, 0);
+    return peak(seconds(e.play(0.4).left, 0.19, 0.21));
+  };
+
+  const [linear, fast, slow] = [0, 0.8, -0.8].map(halfwayPeak);
+  assert.ok(fast < linear * 0.6, `${fast} vs ${linear}`);
+  assert.ok(slow > linear * 1.4, `${slow} vs ${linear}`);
+});
+
+test('a held note follows the sustain as it is turned', () => {
+  const e = sineEngine();
+  e.set('env1_sustain', 1);
+  e.midi(noteOn, 57, 100);
+  e.play(0.3);
+  const full = peak(e.play(0.05).left);
+
+  e.set('env1_sustain', 0.5);
+  e.play(0.01);
+
+  const half = peak(e.play(0.05).left);
+  assert.ok(Math.abs(half / full - 0.5) < 0.01, `${half} vs ${full}`);
+});
+
+test('changing the release while it plays carries on from the same level, at the new speed', () => {
+  const e = sineEngine();
+  e.set('env1_sustain', 1);
+  e.set('env1_release', 1);
+  e.midi(noteOn, 57, 100);
+  e.play(0.3);
+  e.midi(noteOff, 57, 0);
+  e.play(0.3);
+
+  const before = e.live().envelopeLevel[0];
+  e.set('env1_release', 0.2);
+  e.set('env1_release_curve', 0.8);
+  e.play(blockSize / sampleRate);
+  const after = e.live().envelopeLevel[0];
+
+  assert.ok(after < before && before - after < 0.05, `${before} to ${after}`);
+  assert.equal(peak(seconds(e.play(0.3).left, 0.2, 0.3)), 0);
 });
 
 test('releasing a note fades it to silence within the release time', () => {

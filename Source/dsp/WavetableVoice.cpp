@@ -35,10 +35,10 @@ void WavetableVoice::startNote(int midiNoteNumber, float velocity,
     noise.reset();
 
     // Initialize and trigger envelope
-    owner.configureEnvelope(envelope, ParameterSpecs::env[0], getSampleRate());
+    envelope.setSampleRate(getSampleRate());
     envelope.noteOn();
 
-    owner.startModulationSources(getSampleRate());
+    owner.startModulationSources();
 }
 
 void WavetableVoice::stopNote(float velocity, bool allowTailOff)
@@ -85,6 +85,8 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
         clearCurrentNote();
         return;
     }
+
+    envelope.setParameters(owner.envelopeParameters[0]);
 
     const double glidePeak = glide.peakRatio();
 

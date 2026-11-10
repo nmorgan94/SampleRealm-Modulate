@@ -41,6 +41,9 @@ aliasing, at more CPU.
 Each envelope has attack, decay, sustain and release. Its display shows the shape and where the playing
 note has reached.
 
+Drag the small dot on the attack, decay or release up or down to bend that stage. Double-click the dot
+to straighten it again.
+
 ## Modulation
 
 - Drag the cross on an LFO or ENV tab onto a knob to modulate it. The knob shows which source moves it.

@@ -242,3 +242,59 @@ TEST_CASE_METHOD (ProcessorFixture, "A waveform changed while a note plays is he
     CAPTURE (sine, square);
     CHECK (square > sine * 1.2f);
 }
+
+//==============================================================================
+TEST_CASE ("A sustain change on a held note glides to the new level", "[dsp][envelope]")
+{
+    constexpr double sampleRate = 48000.0;
+    ADSREnvelope envelope;
+    envelope.setSampleRate (sampleRate);
+    envelope.setParameters ({ .attack = 0.001f, .decay = 0.001f, .sustain = 1.0f });
+    envelope.noteOn();
+
+    for (int i = 0; i < 1000; ++i)
+        envelope.getNextSample();
+
+    REQUIRE (envelope.getState() == ADSREnvelope::State::Sustain);
+
+    envelope.setParameters ({ .attack = 0.001f, .decay = 0.001f, .sustain = 0.5f });
+    float previous = envelope.getCurrentLevel();
+    float largestStep = 0.0f;
+
+    for (int i = 0; i < 1000; ++i)
+    {
+        const float level = envelope.getNextSample();
+        largestStep = juce::jmax (largestStep, previous - level);
+        previous = level;
+    }
+
+    CHECK (largestStep < 0.01f);
+    CHECK_THAT (previous, WithinAbs (0.5, 1.0e-6));
+}
+
+TEST_CASE ("A retriggered envelope carries on from its level", "[dsp][envelope]")
+{
+    const auto changesParameters = GENERATE (false, true);
+    CAPTURE (changesParameters);
+
+    ADSREnvelope envelope;
+    envelope.setSampleRate (48000.0);
+    envelope.setParameters ({ .attack = 0.001f, .decay = 0.001f, .sustain = 1.0f, .release = 1.0f });
+    envelope.noteOn();
+
+    for (int i = 0; i < 1000; ++i)
+        envelope.getNextSample();
+
+    envelope.noteOff();
+
+    for (int i = 0; i < 20000; ++i)
+        envelope.getNextSample();
+
+    const float released = envelope.getCurrentLevel();
+    envelope.noteOn();
+
+    if (changesParameters)
+        envelope.setParameters ({ .attack = 0.5f, .decay = 0.001f, .sustain = 1.0f, .release = 1.0f, .attackCurve = 0.5f });
+
+    CHECK (envelope.getNextSample() >= released);
+}

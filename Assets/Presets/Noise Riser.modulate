@@ -4,8 +4,10 @@
   <Parameters>
     <PARAM id="env1_attack" value="0.5"/>
     <PARAM id="env1_release" value="1.5"/>
+    <PARAM id="env1_release_curve" value="0.5"/>
     <PARAM id="env1_sustain" value="1.0"/>
     <PARAM id="env2_attack" value="4.0"/>
+    <PARAM id="env2_attack_curve" value="-0.7"/>
     <PARAM id="env2_release" value="1.5"/>
     <PARAM id="env2_sustain" value="1.0"/>
     <PARAM id="filter_cutoff" value="200.0"/>

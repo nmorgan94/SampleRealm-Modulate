@@ -42,6 +42,11 @@ public:
         setupKnob(decayKnob, "Decay", specs.decay.id);
         setupKnob(sustainKnob, "Sustain", specs.sustain.id);
         setupKnob(releaseKnob, "Release", specs.release.id);
+
+        auto& apvts = processor.getAPVTS();
+        envelopeEditor->setCurveParameters({ apvts.getParameter(specs.attackCurve.id),
+                                             apvts.getParameter(specs.decayCurve.id),
+                                             apvts.getParameter(specs.releaseCurve.id) });
         
         // Initial update
         updateEnvelopeDisplay();

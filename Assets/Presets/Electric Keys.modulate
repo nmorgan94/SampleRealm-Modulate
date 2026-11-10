@@ -4,10 +4,13 @@
   <Parameters>
     <PARAM id="env1_attack" value="0.002"/>
     <PARAM id="env1_decay" value="2.0"/>
+    <PARAM id="env1_decay_curve" value="0.5"/>
     <PARAM id="env1_release" value="0.4"/>
+    <PARAM id="env1_release_curve" value="0.4"/>
     <PARAM id="env1_sustain" value="0.25"/>
     <PARAM id="env2_attack" value="0.001"/>
     <PARAM id="env2_decay" value="0.8"/>
+    <PARAM id="env2_decay_curve" value="0.6"/>
     <PARAM id="env2_release" value="0.4"/>
     <PARAM id="env2_sustain" value="0.0"/>
     <PARAM id="filter_cutoff" value="5000.0"/>

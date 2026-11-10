@@ -147,32 +147,44 @@ namespace ParameterSpecs
     inline constexpr Spec unisonDetune = integer ("unison_detune", "Detune", 0, 100, 15);
     inline constexpr Spec unisonSpread = integer ("unison_spread", "Spread", 0, 100, 50);
 
-    struct Envelope { Spec attack, decay, sustain, release; };
+    struct Envelope { Spec attack, decay, sustain, release, attackCurve, decayCurve, releaseCurve; };
 
     inline constexpr std::array env {
         Envelope {
             { "env1_attack", "Env 1 Attack", Kind::real, 0.001f, 5.0f, 0.01f, 0.001f, 0.3f },
             { "env1_decay", "Env 1 Decay", Kind::real, 0.001f, 5.0f, 0.1f, 0.001f, 0.3f },
             { "env1_sustain", "Env 1 Sustain", Kind::real, 0.0f, 1.0f, 0.7f, 0.01f },
-            { "env1_release", "Env 1 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f }
+            { "env1_release", "Env 1 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f },
+            { "env1_attack_curve", "Env 1 Attack Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env1_decay_curve", "Env 1 Decay Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env1_release_curve", "Env 1 Release Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f }
         },
         Envelope {
             { "env2_attack", "Env 2 Attack", Kind::real, 0.001f, 5.0f, 0.01f, 0.001f, 0.3f },
             { "env2_decay", "Env 2 Decay", Kind::real, 0.001f, 5.0f, 0.1f, 0.001f, 0.3f },
             { "env2_sustain", "Env 2 Sustain", Kind::real, 0.0f, 1.0f, 0.7f, 0.01f },
-            { "env2_release", "Env 2 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f }
+            { "env2_release", "Env 2 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f },
+            { "env2_attack_curve", "Env 2 Attack Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env2_decay_curve", "Env 2 Decay Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env2_release_curve", "Env 2 Release Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f }
         },
         Envelope {
             { "env3_attack", "Env 3 Attack", Kind::real, 0.001f, 5.0f, 0.01f, 0.001f, 0.3f },
             { "env3_decay", "Env 3 Decay", Kind::real, 0.001f, 5.0f, 0.1f, 0.001f, 0.3f },
             { "env3_sustain", "Env 3 Sustain", Kind::real, 0.0f, 1.0f, 0.7f, 0.01f },
-            { "env3_release", "Env 3 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f }
+            { "env3_release", "Env 3 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f },
+            { "env3_attack_curve", "Env 3 Attack Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env3_decay_curve", "Env 3 Decay Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env3_release_curve", "Env 3 Release Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f }
         },
         Envelope {
             { "env4_attack", "Env 4 Attack", Kind::real, 0.001f, 5.0f, 0.01f, 0.001f, 0.3f },
             { "env4_decay", "Env 4 Decay", Kind::real, 0.001f, 5.0f, 0.1f, 0.001f, 0.3f },
             { "env4_sustain", "Env 4 Sustain", Kind::real, 0.0f, 1.0f, 0.7f, 0.01f },
-            { "env4_release", "Env 4 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f }
+            { "env4_release", "Env 4 Release", Kind::real, 0.001f, 5.0f, 0.3f, 0.001f, 0.3f },
+            { "env4_attack_curve", "Env 4 Attack Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env4_decay_curve", "Env 4 Decay Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f },
+            { "env4_release_curve", "Env 4 Release Curve", Kind::real, -1.0f, 1.0f, 0.0f, 0.001f }
         }
     };
 
@@ -189,10 +201,10 @@ namespace ParameterSpecs
         &lfo[3].mode, &lfo[3].rate, &lfo[3].sync, &lfo[3].syncRate, &lfo[3].tension,
         &filterEnable, &filterMode, &filterSlope, &filterCutoff, &filterResonance, &drive, &driveHq,
         &glideTime, &glideMode, &coarsePitch, &numVoices, &unisonVoices, &unisonDetune, &unisonSpread,
-        &env[0].attack, &env[0].decay, &env[0].sustain, &env[0].release,
-        &env[1].attack, &env[1].decay, &env[1].sustain, &env[1].release,
-        &env[2].attack, &env[2].decay, &env[2].sustain, &env[2].release,
-        &env[3].attack, &env[3].decay, &env[3].sustain, &env[3].release
+        &env[0].attack, &env[0].decay, &env[0].sustain, &env[0].release, &env[0].attackCurve, &env[0].decayCurve, &env[0].releaseCurve,
+        &env[1].attack, &env[1].decay, &env[1].sustain, &env[1].release, &env[1].attackCurve, &env[1].decayCurve, &env[1].releaseCurve,
+        &env[2].attack, &env[2].decay, &env[2].sustain, &env[2].release, &env[2].attackCurve, &env[2].decayCurve, &env[2].releaseCurve,
+        &env[3].attack, &env[3].decay, &env[3].sustain, &env[3].release, &env[3].attackCurve, &env[3].decayCurve, &env[3].releaseCurve
     };
 
     static_assert (std::ranges::all_of (all, [] (const Spec* spec)

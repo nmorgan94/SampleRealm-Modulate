@@ -5,11 +5,14 @@
 #include "BaseCurveDisplay.h"
 #include "CustomLookAndFeel.h"
 #include "../ModulationManager.h"
+#include "../dsp/EnvelopeCurve.h"
 
 class EnvelopeEditor : public BaseCurveDisplay,
                        public juce::Timer
 {
 public:
+    static constexpr size_t numSegments = 3;
+
     EnvelopeEditor() = default;
 
     ~EnvelopeEditor() override
@@ -55,35 +58,96 @@ public:
         repaint();
     }
 
+    // Attack, decay and release
+    void setCurveParameters(std::array<juce::RangedAudioParameter*, numSegments> parameters)
+    {
+        for (size_t i = 0; i < numSegments; ++i)
+        {
+            curveAttachments[i] = std::make_unique<juce::ParameterAttachment>(*parameters[i], [this, i](float value)
+            {
+                curves[i] = value;
+                repaint();
+            });
+            curveAttachments[i]->sendInitialUpdate();
+        }
+    }
+
+    void mouseMove(const juce::MouseEvent& e) override
+    {
+        setHovered(findHandle(e.position));
+    }
+
+    void mouseExit(const juce::MouseEvent&) override
+    {
+        if (! dragged)
+            setHovered({});
+    }
+
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        const auto handle = findHandle(e.position);
+        if (! handle || ! e.mods.isLeftButtonDown() || e.getNumberOfClicks() > 1)
+            return;
+
+        dragged = handle;
+        dragStartCurve = curves[*handle];
+        curveAttachments[*handle]->beginGesture();
+    }
+
+    void mouseDrag(const juce::MouseEvent& e) override
+    {
+        if (! dragged)
+            return;
+
+        const float dy = e.position.y - e.mouseDownPosition.y;
+        curveAttachments[*dragged]->setValueAsPartOfGesture(dragStartCurve + dy * dragDirections[*dragged] * curvePerPixel);
+    }
+
+    void mouseUp(const juce::MouseEvent& e) override
+    {
+        if (! dragged)
+            return;
+
+        curveAttachments[*dragged]->endGesture();
+        dragged.reset();
+        setHovered(findHandle(e.position));
+    }
+
+    void mouseDoubleClick(const juce::MouseEvent& e) override
+    {
+        if (const auto handle = findHandle(e.position))
+            curveAttachments[*handle]->setValueAsCompleteGesture(0.0f);
+    }
+
 protected:
     void generateCurvePath(juce::Path& path, const juce::Rectangle<float>& bounds) const override
     {
-        const auto stage = getStageBounds(bounds);
+        path.startNewSubPath(bounds.getBottomLeft());
 
-        const float topY     = bounds.getY();
-        const float bottomY  = bounds.getBottom();
-        const float sustainY = bottomY - (sustain * bounds.getHeight());
-
-        path.startNewSubPath(stage.startX, bottomY); // start at bottom left
-        path.lineTo(stage.attackX,  topY);
-        path.lineTo(stage.decayX,   sustainY);
-        path.lineTo(stage.sustainX, sustainY);
-        path.lineTo(stage.releaseX, bottomY);
+        for (const auto& segment : getSegments(bounds))
+            for (int i = 0; i <= segmentSteps; ++i)
+                path.lineTo(segment.pointAt(float(i) / segmentSteps));
     }
 
     void drawControlPoints(juce::Graphics& g, const juce::Rectangle<float>& bounds) const override
     {
-        const auto stage = getStageBounds(bounds);
+        const auto segments = getSegments(bounds);
 
-        const float sustainY = bounds.getBottom() - (sustain * bounds.getHeight());
+        for (const auto point : { segments[0].to, segments[1].to, segments[2].from })
+            drawPoint(g, point.x, point.y);
 
-        drawPoint(g, stage.attackX,  bounds.getY());
-        drawPoint(g, stage.decayX,   sustainY);
-        drawPoint(g, stage.sustainX, sustainY);
+        const auto active = dragged ? dragged : hovered;
+        for (size_t i = 0; i < numSegments; ++i)
+        {
+            const bool isActive = active == i;
+            const float radius = isActive ? handleRadius + 1.5f : handleRadius;
+            g.setColour(juce::Colour(0xff00ff41).withAlpha(isActive ? 1.0f : 0.5f));
+            g.fillEllipse(juce::Rectangle<float>(radius * 2.0f, radius * 2.0f).withCentre(segments[i].pointAt(0.5f)));
+        }
 
         if (isPlayheadVisible())
         {
-            const float playheadX = getPlayheadX(stage);
+            const float playheadX = getPlayheadX(getStageBounds(bounds));
             g.setColour(juce::Colour(0xff00ff41).brighter(0.5f));
             g.drawLine(playheadX, bounds.getY(), playheadX, bounds.getBottom(), 2.0f);
         }
@@ -118,6 +182,70 @@ private:
     float release = 0.3f;
 
     static constexpr float sustainDisplayTime = 0.3f;
+    static constexpr int segmentSteps = 32;
+    static constexpr float handleRadius = 3.0f;
+    static constexpr float hitRadius = 8.0f;
+    static constexpr float curvePerPixel = 1.0f / 120.0f;
+
+    std::array<float, numSegments> curves {};
+    std::array<std::unique_ptr<juce::ParameterAttachment>, numSegments> curveAttachments;
+    std::optional<size_t> hovered, dragged;
+    float dragStartCurve = 0.0f;
+
+    // Towards each segment's end
+    static constexpr std::array dragDirections { -1.0f, 1.0f, 1.0f };
+
+    struct Segment
+    {
+        juce::Point<float> from, to;
+        float curve;
+
+        juce::Point<float> pointAt(float t) const
+        {
+            return { juce::jmap(t, from.x, to.x), juce::jmap(EnvelopeCurve::shapeProgress(t, curve), from.y, to.y) };
+        }
+    };
+
+    std::array<Segment, numSegments> getSegments(const juce::Rectangle<float>& bounds) const
+    {
+        const auto stage = getStageBounds(bounds);
+        const float sustainY = bounds.getBottom() - (sustain * bounds.getHeight());
+
+        return {{
+            { { stage.startX, bounds.getBottom() }, { stage.attackX, bounds.getY() }, curves[0] },
+            { { stage.attackX, bounds.getY() }, { stage.decayX, sustainY }, curves[1] },
+            { { stage.sustainX, sustainY }, { stage.releaseX, bounds.getBottom() }, curves[2] }
+        }};
+    }
+
+    std::optional<size_t> findHandle(juce::Point<float> position) const
+    {
+        const auto segments = getSegments(getLocalBounds().toFloat());
+        std::optional<size_t> found;
+        float closest = hitRadius;
+
+        for (size_t i = 0; i < numSegments; ++i)
+        {
+            const float distance = position.getDistanceFrom(segments[i].pointAt(0.5f));
+            if (distance < closest)
+            {
+                closest = distance;
+                found = i;
+            }
+        }
+
+        return found;
+    }
+
+    void setHovered(std::optional<size_t> handle)
+    {
+        setMouseCursor(handle ? juce::MouseCursor::UpDownResizeCursor : juce::MouseCursor::NormalCursor);
+        if (handle != hovered)
+        {
+            hovered = handle;
+            repaint();
+        }
+    }
 
     struct StageBounds { float startX, attackX, decayX, sustainX, releaseX; };
 

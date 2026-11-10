@@ -13,9 +13,6 @@ import {
 } from '../backend.ts';
 import { localPresets, type PresetStorage, type StoredPreset } from './localPresets.ts';
 
-// The demo has no host to follow
-const DEMO_TEMPO = 120;
-
 const NOTE_ON = 0x90;
 const NOTE_OFF = 0x80;
 const VELOCITY = 100;
@@ -74,7 +71,7 @@ export function workletBackend(info: UiInfo, factoryPresets: StoredPreset[] = []
   const liveListeners = listenerSet<[live: Live]>();
   let port: EnginePort | null = null;
   // Sent once the worklet attaches
-  let pending: unknown[] = [{ type: 'tempo', bpm: DEMO_TEMPO }];
+  let pending: unknown[] = [];
 
   const post = (message: unknown) => {
     if (port) port.postMessage(message);

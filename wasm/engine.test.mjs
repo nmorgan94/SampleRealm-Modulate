@@ -325,18 +325,33 @@ test('a drawn curve and its tension shape the LFO', () => {
   assert.ok(Math.abs(lfoValue[0] - e.curveValue(defaultPoints.length, 0.5, lfoPhase[0])) > 1e-2);
 });
 
+// LFO 1 free-running at a quarter note, on the cutoff
+function syncedLfoEngine() {
+  const e = engine();
+  e.set('lfo1_mode', 1);
+  e.set('lfo1_sync', 1);
+  e.set('lfo1_sync_rate', 6);
+  e.modulate('filter_cutoff', 'lfo', 0, 0, 1);
+  return e;
+}
+
 test('a synced LFO runs at the tempo', () => {
   for (const [bpm, expectedPhase] of [[120, 0.5], [60, 0.25]]) {
-    const e = engine();
-    e.set('lfo1_mode', 1);
-    e.set('lfo1_sync', 1);
-    e.set('lfo1_sync_rate', 6);
-    e.modulate('filter_cutoff', 'lfo', 0, 0, 1);
-    e.setTempo(bpm, 4, 4);
+    const e = syncedLfoEngine();
+    e.setTransport(bpm, false, 0);
     e.play(0.25);
 
     assert.ok(Math.abs(e.live().lfoPhase[0] - expectedPhase) < 0.01, `${bpm} BPM: phase ${e.live().lfoPhase[0]}`);
   }
+});
+
+test('a synced LFO follows the host position while it plays', () => {
+  const e = syncedLfoEngine();
+  e.setTransport(120, true, 0.25);
+  e.play(0.25);
+
+  // Half a beat on from a quarter
+  assert.ok(Math.abs(e.live().lfoPhase[0] - 0.75) < 0.01, `phase ${e.live().lfoPhase[0]}`);
 });
 
 test('master gain scales the output', () => {

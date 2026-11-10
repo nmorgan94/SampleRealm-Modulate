@@ -11,7 +11,7 @@ const fakePort = () => {
   return { port, sent, receive };
 };
 
-test('changes made before the worklet starts reach it in order, after the demo tempo', () => {
+test('changes made before the worklet starts reach it in order', () => {
   const backend = workletBackend(info);
   backend.setValue('filter_cutoff', 2500);
   backend.setModulation('filter_cutoff', { source: 'env', index: 1, min: 0.2, max: 0.8 });
@@ -22,7 +22,6 @@ test('changes made before the worklet starts reach it in order, after the demo t
   backend.attach(port);
 
   assert.deepEqual(sent, [
-    { type: 'tempo', bpm: 120 },
     { type: 'param', index: indexOf('filter_cutoff'), value: 2500 },
     { type: 'modulation', index: indexOf('filter_cutoff'), source: 2, sourceIndex: 1, min: 0.2, max: 0.8 },
     { type: 'curve', lfo: 2, points: [0, 0.1, 1, 0.1] },

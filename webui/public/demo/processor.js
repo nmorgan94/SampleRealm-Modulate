@@ -29,7 +29,7 @@ class ModulateProcessor extends AudioWorkletProcessor {
       const engine = this.engine;
       if (data.type === 'param') engine.setParam(data.index, data.value);
       else if (data.type === 'modulation') engine.setModulation(data.index, data.source, data.sourceIndex, data.min, data.max);
-      else if (data.type === 'tempo') engine.setTempo(data.bpm, 4, 4);
+      else if (data.type === 'transport') engine.setTransport(data.bpm, data.playing, data.ppq);
       else if (data.type === 'midi') engine.midi(data.bytes[0], data.bytes[1], data.bytes[2]);
       else if (data.type === 'curve') {
         const count = Math.min(data.points.length / 2, engine.maxCurvePoints());

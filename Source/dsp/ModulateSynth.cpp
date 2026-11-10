@@ -74,18 +74,15 @@ void ModulateSynth::setSettings(const Settings& newSettings)
     updateLfoShapes(false);
 }
 
-void ModulateSynth::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi)
+void ModulateSynth::process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi, const Transport& transport)
 {
     const auto numSamples = buffer.getNumSamples();
-
-    for (auto& lfoToSync : lfos)
-        lfoToSync.setTempoInfo(settings.tempo.bpm, settings.tempo.numerator, settings.tempo.denominator);
 
     // These read the modulation sources before they advance
     updateLfos();
     updateVoiceCount();
 
-    advanceModulationSources(numSamples);
+    advanceModulationSources(numSamples, transport);
 
     updateFilter();
     updateOscillatorTables();
@@ -203,7 +200,7 @@ void ModulateSynth::updateVoiceCount()
     }
 }
 
-void ModulateSynth::advanceModulationSources(int numSamples)
+void ModulateSynth::advanceModulationSources(int numSamples, const Transport& transport)
 {
     const bool hasActiveVoices = std::ranges::any_of(voices, [](const WavetableVoice* voice) { return voice->isVoiceActive(); });
 
@@ -215,13 +212,18 @@ void ModulateSynth::advanceModulationSources(int numSamples)
         {
             // Back to the start when no notes are playing or nothing listens
             if (isAssigned && hasActiveVoices)
-                lfos[i].advance(numSamples);
+                lfos[i].advance(numSamples, transport.bpm);
             else
                 lfos[i].trigger();
         }
+        else if (transport.playing && lfos[i].isTempoSynced())
+        {
+            // The block hears it at the block's start
+            lfos[i].syncTo(transport.ppq);
+        }
         else if (isAssigned)
         {
-            lfos[i].advance(numSamples);
+            lfos[i].advance(numSamples, transport.bpm);
         }
     }
 

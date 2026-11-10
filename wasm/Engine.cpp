@@ -19,7 +19,8 @@ namespace
     auto values = ModulateSynth::defaultValues();
     ModulateSynth::Assignments modulation {};
     ModulateSynth::Curves curves {};
-    ModulateSynth::Tempo tempo;
+    double currentSampleRate = 48000.0;
+    Transport transport;
 
     ModulateSynth synth;
     PeakMeter meter { numChannels };
@@ -59,9 +60,10 @@ EXPORT (uiInfo) const char* uiInfo()
 
 EXPORT (prepare) void prepare (double sampleRate)
 {
+    currentSampleRate = sampleRate;
     meter.reset();
     buffer.clear();
-    synth.setSettings ({ values, modulation, curves, tempo });
+    synth.setSettings ({ values, modulation, curves });
     synth.prepare (sampleRate, maxBlockSize, numChannels);
 }
 
@@ -103,9 +105,10 @@ EXPORT (setCurve) void setCurve (int lfo, int count)
     curve.count = pointsWritten (count, curve.points).size();
 }
 
-EXPORT (setTempo) void setTempo (double bpm, int numerator, int denominator)
+// The page plays the host: render moves the position on while playing
+EXPORT (setTransport) void setTransport (double bpm, bool playing, double ppq)
 {
-    tempo = { bpm, numerator, denominator };
+    transport = { bpm, playing, ppq };
 }
 
 EXPORT (midi) void midi (int status, int data1, int data2)
@@ -121,11 +124,12 @@ EXPORT (render) void render (int numSamples)
 {
     juce::AudioBuffer<float> block { buffer.getArrayOfWritePointers(), numChannels, std::clamp (numSamples, 0, maxBlockSize) };
 
-    synth.setSettings ({ values, modulation, curves, tempo });
-    synth.process (block, pendingMidi);
+    synth.setSettings ({ values, modulation, curves });
+    synth.process (block, pendingMidi, transport);
     pendingMidi.clear();
 
     meter.process (block);
+    transport.advance (block.getNumSamples(), currentSampleRate);
 }
 
 EXPORT (channel) float* channel (int index)

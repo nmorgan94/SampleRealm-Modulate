@@ -33,7 +33,8 @@ aliasing, at more CPU.
 - Each LFO draws its own shape. Drag a point to move it, and double-click to add or remove one.
 - TENSION bends the lines between the points.
 - In Trigger mode an LFO restarts with each note. In Sync mode it runs freely.
-- RATE is in Hz. With SYNC on, the rate is a note length at the host's tempo instead.
+- RATE is in Hz. With SYNC on, the rate is a note length at the host's tempo instead. In Sync
+  mode it then keeps time with the host's beats while the host plays.
 
 ## Envelopes
 

@@ -71,7 +71,7 @@ float AudioPluginAudioProcessor::getModulatedParam(const juce::String& paramID) 
 ModulateSynth::Settings AudioPluginAudioProcessor::currentSettings() const
 {
     return makeSynthSettings([this](const ParameterSpecs::Spec& spec) { return apvts.getRawParameterValue(spec.id)->load(); },
-                             modulationManager.getAssignments(), lfoCurveState.getCurves(), tempo);
+                             modulationManager.getAssignments(), lfoCurveState.getCurves());
 }
 
 //==============================================================================
@@ -184,17 +184,8 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 {
     juce::ScopedNoDenormals noDenormals;
 
-    if (auto* playHead = getPlayHead())
-    {
-        if (auto position = playHead->getPosition())
-        {
-            const auto timeSig = position->getTimeSignature().orFallback(juce::AudioPlayHead::TimeSignature());
-            tempo = { position->getBpm().orFallback(120.0), timeSig.numerator, timeSig.denominator };
-        }
-    }
-
     synth.setSettings(currentSettings());
-    synth.process(buffer, midiMessages);
+    synth.process(buffer, midiMessages, Transport::from(getPlayHead()));
 
     outputMeter.process(buffer);
 }

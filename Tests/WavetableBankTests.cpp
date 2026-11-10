@@ -122,7 +122,7 @@ TEST_CASE("A high saw has nothing between its harmonics", "[dsp][wavetable]")
         if (block == 0)
             midi.addEvent(juce::MidiMessage::noteOn(1, note, 1.0f), 0);
 
-        synth->process(buffer, midi);
+        synth->process(buffer, midi, {});
 
         if (const auto start = block - (numBlocks - analysedBlocks); start >= 0)
             recorded.copyFrom(0, start * blockSize, buffer, 0, 0, blockSize);

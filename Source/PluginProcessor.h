@@ -96,9 +96,6 @@ private:
     ModulateSynth synth;
     PeakMeter outputMeter { 2 };
 
-    // The host's, kept from the last block that had one
-    ModulateSynth::Tempo tempo;
-
     std::atomic<juce::uint32> stateChanges { 0 };
     
     static juce::ValueTree getOrCreateStateChild(juce::ValueTree parent, const juce::Identifier& childID);

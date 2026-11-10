@@ -5,6 +5,7 @@
 #include <atomic>
 #include <vector>
 #include "../shared/ParameterSpecs.h"
+#include "../shared/Transport.h"
 #include "ADSREnvelope.h"
 #include "Drive.h"
 #include "Filter.h"
@@ -29,19 +30,12 @@ public:
     using Assignments = std::array<Modulation::Assignment, ParameterSpecs::all.size()>;
     using Curves = std::array<LfoCurve::Points, numLfos>;
 
-    struct Tempo
-    {
-        double bpm = 120.0;
-        int numerator = 4, denominator = 4;
-    };
-
     // Values and assignments are in ParameterSpecs::all's order
     struct Settings
     {
         Values values = defaultValues();
         Assignments modulation {};
         Curves curves {};
-        Tempo tempo;
     };
 
     // Written at the end of each block, for the editors
@@ -66,7 +60,7 @@ public:
 
     void prepare(double sampleRate, int maximumBlockSize, int numChannels);
     void setSettings(const Settings& newSettings);
-    void process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi);
+    void process(juce::AudioBuffer<float>& buffer, const juce::MidiBuffer& midi, const Transport& transport);
 
     const Live& getLive() const noexcept { return live; }
 
@@ -97,7 +91,7 @@ private:
     void updateLfoShapes(bool force);
     void updateLfos();
     void updateVoiceCount();
-    void advanceModulationSources(int numSamples);
+    void advanceModulationSources(int numSamples, const Transport& transport);
     void updateFilter();
     void updateOscillatorTables();
     const float* tableFor(int oscIndex, int level);   // for voices, once per block

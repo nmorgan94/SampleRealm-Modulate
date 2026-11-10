@@ -7,8 +7,7 @@
 template <typename ValueOf>
 ModulateSynth::Settings makeSynthSettings (ValueOf&& valueOf,
                                            const ModulateSynth::Assignments& modulation,
-                                           const ModulateSynth::Curves& curves,
-                                           const ModulateSynth::Tempo& tempo)
+                                           const ModulateSynth::Curves& curves)
 {
     ModulateSynth::Settings settings;
 
@@ -17,6 +16,5 @@ ModulateSynth::Settings makeSynthSettings (ValueOf&& valueOf,
 
     settings.modulation = modulation;
     settings.curves = curves;
-    settings.tempo = tempo;
     return settings;
 }

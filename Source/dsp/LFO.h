@@ -40,13 +40,22 @@ public:
         tempoDivision = juce::jlimit(0, 14, divisionIndex);
     }
     
-    void setTempoInfo(double bpm, int numerator, int denominator)
+    bool isTempoSynced() const
     {
-        currentBPM = bpm;
-        timeSignatureNumerator = numerator;
-        timeSignatureDenominator = denominator;
+        return tempoSyncEnabled;
     }
-    
+
+    // The phase at the host's position
+    void syncTo(double ppq)
+    {
+        const double cycles = ppq / beatsPerCycle[tempoDivision];
+        phase = static_cast<float>(cycles - std::floor(cycles));
+
+        // Just below a whole cycle rounds up to 1 as a float
+        if (phase >= 1.0f)
+            phase = 0.0f;
+    }
+
     void trigger()
     {
         if (triggerMode)
@@ -82,18 +91,16 @@ public:
     }
     
     // Advance the LFO by the specified number of samples
-    void advance(int numSamples)
+    void advance(int numSamples, double bpm)
     {
         if (sampleRate <= 0.0 || numSamples <= 0)
             return;
-        
+
         float effectiveRate = rate;
-        
-        if (tempoSyncEnabled && currentBPM > 0.0)
-        {
-            effectiveRate = calculateTempoSyncedRate();
-        }
-        
+
+        if (tempoSyncEnabled && bpm > 0.0)
+            effectiveRate = static_cast<float>(bpm / (60.0 * beatsPerCycle[tempoDivision]));
+
         float phaseIncrement = effectiveRate / static_cast<float>(sampleRate);
         phase += phaseIncrement * numSamples;
         
@@ -110,42 +117,25 @@ private:
     float rate = 1.0f;  // Hz
     bool triggerMode = true;
     bool tempoSyncEnabled = false;
-    int tempoDivision = 6;  
-    double currentBPM = 120.0;
-    int timeSignatureNumerator = 4;
-    int timeSignatureDenominator = 4;
-    
-    float calculateTempoSyncedRate() const
-    {
-        if (currentBPM <= 0.0)
-            return rate;
-        
-        static const float beatsPerCycle[] = {
-            0.25f,                  // 1/16
-            0.25f * 2.0f / 3.0f,    // 1/16T
-            0.25f * 1.5f,           // 1/16D
-            0.5f,                   // 1/8
-            0.5f * 2.0f / 3.0f,     // 1/8T
-            0.5f * 1.5f,            // 1/8D
-            1.0f,                   // 1/4
-            1.0f * 2.0f / 3.0f,     // 1/4T
-            1.0f * 1.5f,            // 1/4D
-            2.0f,                   // 1/2
-            2.0f * 2.0f / 3.0f,     // 1/2T
-            2.0f * 1.5f,            // 1/2D
-            4.0f,                   // 1 Bar
-            8.0f,                   // 2 Bars
-            16.0f                   // 4 Bars
-        };
-        
-        const float beats = beatsPerCycle[tempoDivision];
-        
-        const float beatsPerSecond = static_cast<float>(currentBPM / 60.0);
-        
-        const float cycleDuration = beats / beatsPerSecond;
-        
-        return 1.0f / cycleDuration;
-    }
-    
+    int tempoDivision = 6;
+
+    static constexpr double beatsPerCycle[] = {
+        0.25,                   // 1/16
+        0.25 * 2.0 / 3.0,       // 1/16T
+        0.25 * 1.5,             // 1/16D
+        0.5,                    // 1/8
+        0.5 * 2.0 / 3.0,        // 1/8T
+        0.5 * 1.5,              // 1/8D
+        1.0,                    // 1/4
+        1.0 * 2.0 / 3.0,        // 1/4T
+        1.0 * 1.5,              // 1/4D
+        2.0,                    // 1/2
+        2.0 * 2.0 / 3.0,        // 1/2T
+        2.0 * 1.5,              // 1/2D
+        4.0,                    // 1 Bar
+        8.0,                    // 2 Bars
+        16.0                    // 4 Bars
+    };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LFO)
 };

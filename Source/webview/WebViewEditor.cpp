@@ -4,7 +4,7 @@
 #include "../shared/ParameterSpecs.h"
 #include "../shared/UiInfoJson.h"
 #include "../ui/About.h"
-#include "../ui/MeterBallistics.h"
+#include "../ui/LevelMeter.h"
 #include <WebUIData.h>
 
 #if JUCE_MAC
@@ -181,7 +181,7 @@ WebViewEditor::WebViewEditor (AudioPluginAudioProcessor& p)
     browser->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
     setSize (AudioPluginAudioProcessorEditor::width, AudioPluginAudioProcessorEditor::height);
-    startTimerHz (MeterBallistics::updateHz);
+    startTimerHz (LevelMeter::Ballistics::updateHz);
 }
 
 juce::WebBrowserComponent::Options WebViewEditor::createOptions()
@@ -338,24 +338,13 @@ void WebViewEditor::timerCallback()
     auto& meter = processorRef.getOutputMeter();
 
     juce::Array<juce::var> peaks;
-    bool silent = true;
 
-    for (int channel = 0; channel < PeakMeter::maxChannels; ++channel)
-    {
-        const auto peak = meter.readAndReset (channel);
-        silent = silent && peak == 0.0f;
-        peaks.add (peak);
-    }
+    for (int channel = 0; channel < meter.getNumChannels(); ++channel)
+        peaks.add (meter.readAndReset (channel));
 
-    // Silence only needs sending once
-    if (! (silent && lastSilent))
-    {
-        auto level = std::make_unique<juce::DynamicObject>();
-        level->setProperty ("peaks", peaks);
-        browser->emitEventIfBrowserIsVisible ("level", juce::var (level.release()));
-    }
-
-    lastSilent = silent;
+    auto level = std::make_unique<juce::DynamicObject>();
+    level->setProperty ("peaks", peaks);
+    browser->emitEventIfBrowserIsVisible ("level", juce::var (level.release()));
 
     browser->emitEventIfBrowserIsVisible ("live", toVar (processorRef.getLive()));
     sendStateIfChanged();

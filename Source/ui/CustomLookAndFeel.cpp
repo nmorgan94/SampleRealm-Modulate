@@ -1,5 +1,6 @@
 #include "CustomLookAndFeel.h"
 #include "HeaderBar.h"
+#include "LevelMeter.h"
 #include <BinaryData.h>
 #include <map>
 
@@ -44,6 +45,9 @@ CustomLookAndFeel::CustomLookAndFeel()
 
     setColour(HeaderBar::backgroundColourId, juce::Colours::transparentBlack);
     setColour(HeaderBar::titleColourId, juce::Colour(0xff00ff00));
+
+    setColour(LevelMeter::backgroundColourId, juce::Colours::black);
+    setColour(LevelMeter::outlineColourId, juce::Colour(0xff303030));
 
     setColour(juce::TextEditor::backgroundColourId, juce::Colours::black);
     setColour(juce::TextEditor::textColourId, juce::Colours::white);

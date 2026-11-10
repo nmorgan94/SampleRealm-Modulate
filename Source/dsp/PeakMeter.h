@@ -36,12 +36,11 @@ public:
         }
     }
 
-    /** The loudest sample on a channel since the last call, as linear gain. Channels not metered read 0. */
+    /** The loudest sample on a channel since the last call, as linear gain. */
     float readAndReset (int channel) noexcept
     {
         jassert (juce::isPositiveAndBelow (channel, maxChannels));
-        const auto loudest = peak (channel).exchange (0.0f);
-        return channel < getNumChannels() ? loudest : 0.0f;
+        return peak (channel).exchange (0.0f);
     }
 
     void reset() noexcept

@@ -1,4 +1,4 @@
-// The same cases as the MeterBallistics tests in Tests/MeterTests.cpp
+// The same cases as the Ballistics tests in Tests/MeterTests.cpp
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { barChanged, CLIP_HOLD_TICKS, emptyBar, FLOOR_DB, isClipping, updateBar, UPDATE_HZ, type Bar } from '../src/meter.ts';

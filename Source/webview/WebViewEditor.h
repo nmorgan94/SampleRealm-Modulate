@@ -33,7 +33,6 @@ private:
     // What the page has, so it hears only about changes it didn't make
     ModulateSynth::Assignments sentModulation {};
     ModulateSynth::Curves sentCurves {};
-    bool lastSilent = false;
     juce::uint32 lastPresetChange = 0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebViewEditor)

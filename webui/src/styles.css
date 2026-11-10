@@ -9,7 +9,6 @@
   --color-title: #00ff00;
   --color-dim: #666666;
   --color-fg: #ffffff;
-  --color-meter-low: #1ccad8;
 
   /* For the shared header and overlays, as the native colour IDs in CustomLookAndFeel */
   --color-header: transparent;
@@ -21,6 +20,11 @@
   --color-input-focus: var(--color-accent);
   --color-input-highlight: color-mix(in oklab, var(--color-accent) 30%, transparent);
   --color-scrollbar: var(--color-widget-border);
+
+  /* LevelMeter's colour IDs */
+  --color-line: #303030;
+  --color-thumb: var(--color-accent);
+  --color-clip: #ff3d4a;
 
   --font-display: Orbitron, var(--font-sans);
 }

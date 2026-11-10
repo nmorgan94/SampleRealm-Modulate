@@ -96,7 +96,7 @@ export interface PresetBackend {
 
 export const isSamePreset = (a: PresetEntry, b: PresetEntry) => a.name === b.name && a.isFactory === b.isFactory;
 
-export interface ModulateBackend {
+export interface PluginBackend {
   info: UiInfo;
   // "VST3 in Ableton Live", or where else the editor is running
   running: string;
@@ -108,6 +108,10 @@ export interface ModulateBackend {
   beginGesture(id: string): void;
   endGesture(id: string): void;
   subscribe(id: string, listener: (value: number) => void): () => void;
+  onLevel(listener: (level: Level) => void): () => void;
+}
+
+export interface ModulateBackend extends PluginBackend {
   // null when the parameter has none
   getModulation(id: string): Modulation | null;
   setModulation(id: string, modulation: Modulation | null): void;
@@ -116,7 +120,6 @@ export interface ModulateBackend {
   getCurve(lfo: number): Point[];
   setCurve(lfo: number, points: Point[]): void;
   onCurve(listener: (lfo: number) => void): () => void;
-  onLevel(listener: (level: Level) => void): () => void;
   onLive(listener: (live: Live) => void): () => void;
 }
 

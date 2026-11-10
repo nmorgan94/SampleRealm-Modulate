@@ -83,6 +83,53 @@ TEST_CASE_METHOD (ProcessorFixture, "The header fits the title, the preset bar a
     CHECK (bars[0]->getRight() < meters[0]->getX());
 }
 
+TEST_CASE ("A labelled knob takes a typed value, snapped, and ignores words", "[editor]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    LabeledSlider<> knob;
+    knob.setLabelText ("Release");
+    auto& slider = knob.getSlider();
+    slider.setRange (0.0, 5.0, 0.5);
+
+    std::vector<juce::Label*> labels;
+    findAll (knob, labels);
+    REQUIRE (labels.size() == 1);
+    CHECK (labels[0]->getText() == "Release");
+    CHECK (slider.getTitle() == "Release");
+
+    labels[0]->setText ("1.3", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 1.5);
+
+    labels[0]->setText ("99", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 5.0);
+
+    labels[0]->setText ("slow", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 5.0);
+}
+
+TEST_CASE_METHOD (ProcessorFixture, "A labelled choice knob takes only its names as typed values", "[editor]")
+{
+    const auto* id = ParameterSpecs::lfo[0].syncRate.id;
+    LabeledSlider<ModulatableSlider> knob (processor, id);
+    juce::AudioProcessorValueTreeState::SliderAttachment attachment (processor.getAPVTS(), id, knob.getSlider());
+    auto& slider = knob.getSlider();
+
+    std::vector<juce::Label*> labels;
+    findAll (knob, labels);
+    REQUIRE (labels.size() == 1);
+    REQUIRE (slider.getValue() == 6.0);
+
+    labels[0]->setText ("1/4", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 6.0);
+
+    labels[0]->setText (" 2 bars ", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 13.0);
+
+    labels[0]->setText ("2", juce::sendNotificationSync);
+    CHECK (slider.getValue() == 13.0);
+}
+
 TEST_CASE ("Orbitron's weights come from the one variable font", "[editor][font]")
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;

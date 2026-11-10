@@ -3,13 +3,13 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "CustomLookAndFeel.h"
-#include "ValueLabelSlider.h"
+#include "RotarySlider.h"
 #include "ModulationTarget.h"
 
 // Forward declaration
 class AudioPluginAudioProcessor;
 
-class ModulatableSlider : public ValueLabelSlider,
+class ModulatableSlider : public RotarySlider,
                           public juce::DragAndDropTarget,
                           public ModulationTarget,
                           private juce::Timer
@@ -18,14 +18,19 @@ public:
     ModulatableSlider(AudioPluginAudioProcessor& proc, const juce::String& paramID)
         : processor(proc), parameterID(paramID)
     {
-        setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         refreshAssignment();
 
         onValueChange = [this]() { updateModulationRangeFromSlider(); };
     }
 
     const juce::String& getParameterID() const { return parameterID; }
+
+    juce::StringArray valueNames() const override
+    {
+        if (auto* param = getParameter())
+            return param->getAllValueStrings();
+        return {};
+    }
 
     void setParameterID(const juce::String& newParameterID)
     {
@@ -170,7 +175,7 @@ private:
             repaint();
     }
     
-    juce::RangedAudioParameter* getParameter()
+    juce::RangedAudioParameter* getParameter() const
     {
         return processor.getAPVTS().getParameter(parameterID);
     }

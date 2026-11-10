@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ModulatableSlider.h"
+#include "LabeledSlider.h"
 #include "StepperDisplay.h"
 #include "../Parameters.h"
 
@@ -12,8 +13,8 @@ class VoicePanel : public juce::Component
 {
 public:
     explicit VoicePanel(AudioPluginAudioProcessor& proc)
-        : coarsePitchSlider(proc, ParameterSpecs::coarsePitch.id),
-          glideSlider(proc, ParameterSpecs::glideTime.id)
+        : coarsePitchKnob(proc, ParameterSpecs::coarsePitch.id),
+          glideKnob(proc, ParameterSpecs::glideTime.id)
     {
         titleLabel.setText("VOICE", juce::dontSendNotification);
         titleLabel.setJustificationType(juce::Justification::centredLeft);
@@ -40,26 +41,18 @@ public:
         spreadDisplay.attachToParameter(proc, ParameterSpecs::unisonSpread.id);
         addAndMakeVisible(spreadDisplay);
 
-        coarsePitchLabel.setText("Pitch", juce::dontSendNotification);
-        coarsePitchLabel.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(coarsePitchLabel);
-
-        coarsePitchSlider.attachLabel(coarsePitchLabel);
-        addAndMakeVisible(coarsePitchSlider);
+        coarsePitchKnob.setLabelText("Pitch");
+        addAndMakeVisible(coarsePitchKnob);
 
         auto& apvts = proc.getAPVTS();
         coarsePitchAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::coarsePitch.id, coarsePitchSlider);
+            apvts, ParameterSpecs::coarsePitch.id, coarsePitchKnob.getSlider());
 
-        glideLabel.setText("Glide", juce::dontSendNotification);
-        glideLabel.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(glideLabel);
-
-        glideSlider.attachLabel(glideLabel);
-        addAndMakeVisible(glideSlider);
+        glideKnob.setLabelText("Glide");
+        addAndMakeVisible(glideKnob);
 
         glideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::glideTime.id, glideSlider);
+            apvts, ParameterSpecs::glideTime.id, glideKnob.getSlider());
 
         rateButton.setButtonText("RATE");
         rateButton.getProperties().set("pillToggle", true);
@@ -103,27 +96,21 @@ public:
             stepper->setBounds(slot.withSizeKeepingCentre(slot.getWidth(), stepperHeight));
         }
 
-        auto topHalf = rightColumn.removeFromTop(rightColumn.getHeight() / 2);
-        coarsePitchLabel.setBounds(topHalf.removeFromTop(15));
-        auto pitchSize = juce::jmin(topHalf.getWidth(), topHalf.getHeight());
-        coarsePitchSlider.setBounds(topHalf.withSizeKeepingCentre(pitchSize, pitchSize));
+        coarsePitchKnob.setBounds(rightColumn.removeFromTop(rightColumn.getHeight() / 2));
+        glideKnob.setBounds(rightColumn);
 
-        glideLabel.setBounds(rightColumn.removeFromTop(15));
-        auto glideSize = juce::jmin(rightColumn.getWidth(), rightColumn.getHeight());
-        glideSlider.setBounds(rightColumn.withSizeKeepingCentre(glideSize, glideSize));
-        rateButton.setBounds(glideSlider.getRight() + 5, glideSlider.getBottom() - 14, 32, 14);
+        const auto glideBounds = glideKnob.getSlider().getBounds() + glideKnob.getPosition();
+        rateButton.setBounds(glideBounds.getRight() + 5, glideBounds.getBottom() - 14, 32, 14);
     }
 
 private:
     juce::Label titleLabel;
-    juce::Label coarsePitchLabel;
-    juce::Label glideLabel;
     StepperDisplay voicesDisplay;
     StepperDisplay unisonDisplay;
     StepperDisplay detuneDisplay;
     StepperDisplay spreadDisplay;
-    ModulatableSlider coarsePitchSlider;
-    ModulatableSlider glideSlider;
+    LabeledSlider<ModulatableSlider> coarsePitchKnob;
+    LabeledSlider<ModulatableSlider> glideKnob;
     juce::ToggleButton rateButton;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> coarsePitchAttachment;

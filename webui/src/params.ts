@@ -53,7 +53,14 @@ export const formatValue = (param: ParamInfo, value: number) => {
   return value.toFixed(decimalPlaces(param.step));
 };
 
+// As LabeledSlider's typed values: a choice takes only one of its names
 export const parseValue = (param: ParamInfo, text: string): number | null => {
+  if (param.kind === 'choice') {
+    const typed = text.trim().toLowerCase();
+    const index = param.choices.findIndex((choice) => choice.toLowerCase() === typed);
+    return index < 0 ? null : index;
+  }
+
   const number = parseFloat(text);
   if (Number.isNaN(number)) return null;
   return snap(param, number);

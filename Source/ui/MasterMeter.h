@@ -5,7 +5,7 @@
 #include "../dsp/PeakMeter.h"
 #include "../shared/ParameterSpecs.h"
 #include "MeterBallistics.h"
-#include "ValueLabelSlider.h"
+#include "RotarySlider.h"
 
 class OutputMeter : public juce::Component,
                     private juce::Timer
@@ -91,11 +91,8 @@ class MasterMeter : public juce::Component
 public:
     MasterMeter(PeakMeter& outputMeter,
                 juce::AudioProcessorValueTreeState& apvts)
-        : gainSlider(),
-          meter(outputMeter)
+        : meter(outputMeter)
     {
-        gainSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        gainSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         addAndMakeVisible(gainSlider);
 
         addAndMakeVisible(meter);
@@ -139,7 +136,7 @@ public:
     }
 
 private:
-    ValueLabelSlider gainSlider;
+    RotarySlider gainSlider;
     OutputMeter meter;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
 

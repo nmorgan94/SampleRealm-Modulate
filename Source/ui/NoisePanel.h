@@ -24,8 +24,6 @@ public:
         addChoices(typeSelector, ParameterSpecs::noiseType);
         addAndMakeVisible(typeSelector);
 
-        levelSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        levelSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         addAndMakeVisible(levelSlider);
 
         auto& apvts = proc.getAPVTS();

@@ -273,3 +273,9 @@ test('typed text parses and snaps, and text without a number is ignored', () => 
   assert.equal(parseValue(param('master_gain'), '-3.14'), -3.1);
   assert.equal(parseValue(param('env1_release'), 'slow'), null);
 });
+
+test('a choice takes only its names as typed text, whatever their case', () => {
+  assert.equal(parseValue(param('lfo1_sync_rate'), '1/4'), 6);
+  assert.equal(parseValue(param('lfo1_sync_rate'), ' 2 bars '), 13);
+  assert.equal(parseValue(param('lfo1_sync_rate'), '2'), null);
+});

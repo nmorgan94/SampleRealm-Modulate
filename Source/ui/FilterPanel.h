@@ -3,6 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ModulatableSlider.h"
+#include "LabeledSlider.h"
 #include "FilterResponseDisplay.h"
 
 class AudioPluginAudioProcessor;
@@ -15,9 +16,9 @@ class FilterPanel : public juce::Component,
 public:
     explicit FilterPanel(AudioPluginAudioProcessor& proc)
         : processor(proc),
-          driveSlider(proc, ParameterSpecs::drive.id),
-          cutoffSlider(proc, ParameterSpecs::filterCutoff.id),
-          resonanceSlider(proc, ParameterSpecs::filterResonance.id)
+          driveKnob(proc, ParameterSpecs::drive.id),
+          cutoffKnob(proc, ParameterSpecs::filterCutoff.id),
+          resonanceKnob(proc, ParameterSpecs::filterResonance.id)
     {
         titleLabel.setText("FILTER", juce::dontSendNotification);
         titleLabel.setJustificationType(juce::Justification::centredLeft);
@@ -38,9 +39,12 @@ public:
         addChoices(slopeSelector, ParameterSpecs::filterSlope);
         addAndMakeVisible(slopeSelector);
 
-        setupKnob(cutoffLabel, cutoffSlider, "Cutoff");
-        setupKnob(resonanceLabel, resonanceSlider, "Resonance");
-        setupKnob(driveLabel, driveSlider, "Drive");
+        cutoffKnob.setLabelText("Cutoff");
+        resonanceKnob.setLabelText("Resonance");
+        driveKnob.setLabelText("Drive");
+        addAndMakeVisible(cutoffKnob);
+        addAndMakeVisible(resonanceKnob);
+        addAndMakeVisible(driveKnob);
 
         hqButton.setButtonText("HQ");
         hqButton.getProperties().set("pillToggle", true);
@@ -54,11 +58,11 @@ public:
         slopeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
             apvts, ParameterSpecs::filterSlope.id, slopeSelector);
         cutoffAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::filterCutoff.id, cutoffSlider);
+            apvts, ParameterSpecs::filterCutoff.id, cutoffKnob.getSlider());
         resonanceAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::filterResonance.id, resonanceSlider);
+            apvts, ParameterSpecs::filterResonance.id, resonanceKnob.getSlider());
         driveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, ParameterSpecs::drive.id, driveSlider);
+            apvts, ParameterSpecs::drive.id, driveKnob.getSlider());
         hqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
             apvts, ParameterSpecs::driveHq.id, hqButton);
 
@@ -139,35 +143,15 @@ public:
         auto knobArea = bounds;
         int knobWidth = knobArea.getWidth() / 3;
 
-        layoutKnob(knobArea.removeFromLeft(knobWidth).reduced(5), driveLabel, driveSlider);
+        driveKnob.setBounds(knobArea.removeFromLeft(knobWidth).reduced(5));
+        cutoffKnob.setBounds(knobArea.removeFromLeft(knobWidth).reduced(5));
+        resonanceKnob.setBounds(knobArea.reduced(5));
 
-        auto knobBounds = driveSlider.getBounds();
+        auto knobBounds = driveKnob.getSlider().getBounds() + driveKnob.getPosition();
         hqButton.setBounds(knobBounds.removeFromTop(14).removeFromRight(20).translated(15, 0));
-
-        layoutKnob(knobArea.removeFromLeft(knobWidth).reduced(5), cutoffLabel, cutoffSlider);
-        layoutKnob(knobArea.reduced(5), resonanceLabel, resonanceSlider);
     }
     
 private:
-    void setupKnob(juce::Label& label, ValueLabelSlider& slider, const juce::String& text)
-    {
-        label.setText(text, juce::dontSendNotification);
-        label.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(label);
-
-        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-        slider.attachLabel(label);
-        addAndMakeVisible(slider);
-    }
-
-    void layoutKnob(juce::Rectangle<int> cell, juce::Label& label, juce::Slider& slider)
-    {
-        label.setBounds(cell.removeFromTop(15));
-        auto size = juce::jmin(cell.getWidth(), cell.getHeight());
-        slider.setBounds(cell.withSizeKeepingCentre(size, size));
-    }
-
     void buttonClicked(juce::Button*) override
     {
         updateEnabledAppearance();
@@ -200,17 +184,12 @@ private:
 
         updateSlopeAvailability();
 
-        cutoffLabel.setAlpha(alpha);
-        cutoffSlider.setAlpha(alpha);
-        cutoffSlider.setEnabled(isEnabled);
-        
-        resonanceLabel.setAlpha(alpha);
-        resonanceSlider.setAlpha(alpha);
-        resonanceSlider.setEnabled(isEnabled);
+        for (auto* knob : { &cutoffKnob, &resonanceKnob, &driveKnob })
+        {
+            knob->setAlpha(alpha);
+            knob->setEnabled(isEnabled);
+        }
 
-        driveLabel.setAlpha(alpha);
-        driveSlider.setAlpha(alpha);
-        driveSlider.setEnabled(isEnabled);
         hqButton.setAlpha(alpha);
         hqButton.setEnabled(isEnabled);
 
@@ -233,15 +212,11 @@ private:
     juce::ComboBox modeSelector;
     juce::ComboBox slopeSelector;
 
-    juce::Label driveLabel;
-    ModulatableSlider driveSlider;
+    LabeledSlider<ModulatableSlider> driveKnob;
     juce::ToggleButton hqButton;
 
-    juce::Label cutoffLabel;
-    ModulatableSlider cutoffSlider;
-
-    juce::Label resonanceLabel;
-    ModulatableSlider resonanceSlider;
+    LabeledSlider<ModulatableSlider> cutoffKnob;
+    LabeledSlider<ModulatableSlider> resonanceKnob;
 
     FilterResponseDisplay responseDisplay;
     

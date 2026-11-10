@@ -1,7 +1,7 @@
 # Modulate
 
 A wavetable synth with three oscillators, noise, a filter with drive, four LFOs and four envelopes.
-The LFOs and envelopes can move most knobs.
+The LFOs and envelopes can move most knobs. Click a knob's name to type its value.
 
 ## Oscillators
 

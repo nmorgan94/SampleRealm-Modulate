@@ -4,6 +4,7 @@ import { at, ChoiceBox, Knob, Label, PanelBox, PillToggle, Toggle, type Rect } f
 import { FilterMode, filterMagnitude } from './filterResponse.ts';
 import { juceHeight } from './fonts.ts';
 import { useLive, useModulation, useParam } from './hooks.ts';
+import { LABEL_HEIGHT } from './layout.ts';
 import { modulatedValue, sourceValue } from './modulation.ts';
 import { clamp01 } from './params.ts';
 
@@ -61,8 +62,8 @@ export function FilterPanel({ backend, bounds }: { backend: ModulateBackend; bou
     <Knob
       backend={backend}
       id={id}
-      bounds={{ left: left + 15, top: 205, width: 40, height: 40 }}
-      label={{ bounds: { left, top: 190, width: 70, height: 15 }, text }}
+      bounds={{ left, top: 190, width: 70, height: LABEL_HEIGHT + 40 }}
+      label={{ text }}
       modulatable
       enabled={enabled}
     />

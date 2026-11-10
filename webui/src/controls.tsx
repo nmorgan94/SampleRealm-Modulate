@@ -1,5 +1,5 @@
-// Mirrors Source/ui/CustomLookAndFeel.h, ModulatableSlider, StepperDisplay, ValueLabelSlider and CustomLFOTabButton
-import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
+// Mirrors Source/ui/CustomLookAndFeel.h, ModulatableSlider, LabeledSlider, RotarySlider, StepperDisplay and CustomLFOTabButton
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import type { ModulateBackend, Modulation, ModulationSource, ParamInfo } from './backend.ts';
 import { bubbleAt } from './bubble.ts';
@@ -8,7 +8,8 @@ import { juceHeight } from './fonts.ts';
 import { useLive, useModulation, useParam } from './hooks.ts';
 import { useMenu, type MenuItem } from './Menu.tsx';
 import { applyDepthChange, modulatedValue, sourceValue } from './modulation.ts';
-import { formatValue, fromProportion, snap, toProportion } from './params.ts';
+import { layOutBelowLabel } from './layout.ts';
+import { formatValue, fromProportion, parseValue, snap, toProportion } from './params.ts';
 
 export type { Rect };
 
@@ -170,7 +171,13 @@ function useValueDrag(backend: ModulateBackend, id: string, valueAt: (e: ReactPo
     'aria-valuetext': formatValue(param, value),
   };
 
-  return { ...state, dragging, handlers, aria };
+  // A value set at once, as typed or reset by a double-click
+  const commit = (next: number) => {
+    state.commit(next);
+    onChange?.(next);
+  };
+
+  return { ...state, commit, dragging, handlers, aria };
 }
 
 const rotaryValueAt = (e: ReactPointerEvent, start: DragStart, param: ParamInfo) => {
@@ -178,6 +185,9 @@ const rotaryValueAt = (e: ReactPointerEvent, start: DragStart, param: ParamInfo)
   const travel = moved / (PIXELS_FOR_FULL_DRAG * (e.shiftKey ? FINE_DRAG : 1));
   return fromProportion(param, toProportion(param, start.value) + travel);
 };
+
+// A TextEditor's look
+export const INPUT_CLASS = 'border border-input-outline bg-input text-fg outline-none selection:bg-input-highlight focus:border-input-focus';
 
 const LABEL_STYLE: CSSProperties = { fontSize: juceHeight(15), lineHeight: 1 };
 
@@ -230,22 +240,108 @@ function Bubble({ target, text }: { target: RefObject<HTMLElement | null>; text:
   );
 }
 
+// LabeledSlider's
+const NAME_DELAY_MS = 600;
+
+interface KnobLabelProps {
+  bounds: Rect;
+  text: string;
+  colour?: string;
+  valueText: string;
+  dragging: boolean;
+  enabled: boolean;
+  onType: (typed: string) => void;
+}
+
+// LabeledSlider's label: the name, or the value while the knob moves and a moment after. Click it to type a value
+function KnobLabel({ bounds, text, colour, valueText, dragging, enabled, onType }: KnobLabelProps) {
+  const [held, setHeld] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const cancelled = useRef(false);
+  const nameTimer = useRef<number>();
+  const style = { ...at(bounds), ...LABEL_STYLE, color: colour, ...dimmed(enabled) };
+
+  const release = () => {
+    clearTimeout(nameTimer.current);
+    nameTimer.current = window.setTimeout(() => setHeld(false), NAME_DELAY_MS);
+  };
+
+  useEffect(() => {
+    if (!dragging) {
+      if (held) release();
+      return;
+    }
+    clearTimeout(nameTimer.current);
+    setHeld(true);
+  }, [dragging]);
+
+  useEffect(() => () => clearTimeout(nameTimer.current), []);
+
+  if (editing)
+    return (
+      <input
+        className={`${INPUT_CLASS} text-center`}
+        style={style}
+        autoFocus
+        defaultValue={valueText}
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={(e) => {
+          setEditing(false);
+          if (!cancelled.current) {
+            onType(e.currentTarget.value);
+            setHeld(true);
+          }
+          cancelled.current = false;
+          release();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') cancelled.current = true;
+          if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur();
+        }}
+      />
+    );
+
+  return (
+    <button
+      type="button"
+      className="flex cursor-text items-center justify-center"
+      style={style}
+      disabled={!enabled}
+      onClick={() => {
+        clearTimeout(nameTimer.current);
+        setEditing(true);
+      }}
+    >
+      <FittedText text={dragging || held ? valueText : text} width={bounds.width - 2 * LABEL_INSET} />
+    </button>
+  );
+}
+
 interface KnobProps {
   backend: ModulateBackend;
   id: string;
+  // With a label, the label's and the knob's together
   bounds: Rect;
   // Shows the value while the knob turns. Without one, a bubble does
-  label?: { bounds: Rect; text: string; colour?: string };
+  label?: { text: string; colour?: string };
   modulatable?: boolean;
   enabled?: boolean;
 }
 
-export function Knob({ backend, id, bounds, label, modulatable = false, enabled = true }: KnobProps) {
+export function Knob({ backend, id, bounds: area, label, modulatable = false, enabled = true }: KnobProps) {
   const controls = useModulationControlsFor(backend, id, modulatable);
-  const { value, param, dragging, handlers, aria } = useValueDrag(backend, id, rotaryValueAt, controls?.followValue);
+  const { value, param, commit, dragging, handlers, aria } = useValueDrag(backend, id, rotaryValueAt, controls?.followValue);
   const modulation = controls?.modulation ?? null;
   const live = useLive(backend, modulation !== null);
   const knob = useRef<HTMLDivElement>(null);
+  const labelled = label && { ...label, ...layOutBelowLabel(area) };
+  const bounds = labelled?.control ?? area;
+
+  // As LabeledSlider's onTextChange
+  const type = (typed: string) => {
+    const next = parseValue(param, typed);
+    if (next !== null && next !== value) commit(next);
+  };
 
   const size = Math.min(bounds.width, bounds.height);
   const centre = size / 2;
@@ -259,10 +355,16 @@ export function Knob({ backend, id, bounds, label, modulatable = false, enabled 
 
   return (
     <>
-      {label && (
-        <div className="flex items-center justify-center" style={{ ...at(label.bounds), ...LABEL_STYLE, color: label.colour, ...dimmed(enabled) }}>
-          <FittedText text={dragging ? formatValue(param, value) : label.text} width={label.bounds.width - 2 * LABEL_INSET} />
-        </div>
+      {labelled && (
+        <KnobLabel
+          bounds={labelled.label}
+          text={labelled.text}
+          colour={labelled.colour}
+          valueText={aria['aria-valuetext']}
+          dragging={dragging}
+          enabled={enabled}
+          onType={type}
+        />
       )}
       <div
         ref={knob}

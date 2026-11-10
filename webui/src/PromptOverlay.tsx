@@ -1,6 +1,6 @@
 // Mirrors Source/ui/PromptOverlay.h
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { TextButton } from './controls.tsx';
+import { INPUT_CLASS, TextButton } from './controls.tsx';
 import { juceHeight } from './fonts.ts';
 import { Modal } from './Modal.tsx';
 
@@ -66,7 +66,7 @@ function Overlay({ shown, dismiss }: { shown: Shown; dismiss(): void }) {
       ) : (
         <input
           ref={input}
-          className="absolute border border-input-outline bg-input px-1 text-fg outline-none selection:bg-input-highlight focus:border-input-focus"
+          className={`absolute px-1 ${INPUT_CLASS}`}
           style={{ left: 20, top: 48, width: PANEL.width - 40, height: 28, fontSize: juceHeight(14) }}
           defaultValue={shown.initialText}
         />

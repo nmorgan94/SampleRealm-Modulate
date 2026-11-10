@@ -4,6 +4,7 @@ import { EnvelopeStage, NUM_ENVELOPES, type ModulateBackend } from './backend.ts
 import { Knob, PanelBox, SourceTabs, type Rect } from './controls.tsx';
 import { CurveBackground, ControlPoint, PLAYHEAD_COLOUR } from './curveDisplay.tsx';
 import { juceHeight } from './fonts.ts';
+import { LABEL_HEIGHT } from './layout.ts';
 import { useLive, useParam } from './hooks.ts';
 import { clamp01 } from './params.ts';
 
@@ -84,8 +85,8 @@ function EnvelopeContent({ backend, envelope }: { backend: ModulateBackend; enve
             key={stage}
             backend={backend}
             id={`env${envelope + 1}_${stage}`}
-            bounds={{ left, top: 163, width: knobSize, height: knobSize }}
-            label={{ bounds: { left, top: 147, width: knobSize, height: 16 }, text: STAGE_NAMES[i]!, colour: 'var(--color-accent)' }}
+            bounds={{ left, top: 147, width: knobSize, height: LABEL_HEIGHT + knobSize }}
+            label={{ text: STAGE_NAMES[i]!, colour: 'var(--color-accent)' }}
           />
         );
       })}

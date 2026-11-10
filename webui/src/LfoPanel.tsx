@@ -6,6 +6,7 @@ import { evaluate, pointsOrDefault, SHAPES } from './curves.ts';
 import { CurveBackground, ControlPoint, curvePath, PLAYHEAD_COLOUR } from './curveDisplay.tsx';
 import { pointIn } from './editorRoot.ts';
 import { useCurve, useLive, useParam } from './hooks.ts';
+import { LABEL_HEIGHT } from './layout.ts';
 import { clamp01 } from './params.ts';
 
 const RESOLUTION = 200;
@@ -132,16 +133,16 @@ function LfoContent({ backend, lfo }: { backend: ModulateBackend; lfo: number })
         key={synced ? 'sync' : 'free'}
         backend={backend}
         id={synced ? id('sync_rate') : id('rate')}
-        bounds={{ left: 185, top: 162, width: 50, height: 50 }}
-        label={{ bounds: { left: 185, top: 147, width: 50, height: 16 }, text: 'Rate', colour: 'var(--color-accent)' }}
+        bounds={{ left: 185, top: 147, width: 50, height: LABEL_HEIGHT + 50 }}
+        label={{ text: 'Rate', colour: 'var(--color-accent)' }}
         modulatable
       />
       <PillToggle backend={backend} id={id('sync')} bounds={{ left: 245, top: 167, width: 35, height: 12 }} text="SYNC" />
       <Knob
         backend={backend}
         id={id('tension')}
-        bounds={{ left: 290, top: 162, width: 50, height: 50 }}
-        label={{ bounds: { left: 290, top: 147, width: 50, height: 16 }, text: 'Tension', colour: 'var(--color-accent)' }}
+        bounds={{ left: 290, top: 147, width: 50, height: LABEL_HEIGHT + 50 }}
+        label={{ text: 'Tension', colour: 'var(--color-accent)' }}
       />
     </>
   );

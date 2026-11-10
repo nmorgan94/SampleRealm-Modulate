@@ -5,7 +5,7 @@
 #include "EnvelopeEditor.h"
 #include "CustomLFOTabButton.h"
 #include "CustomLookAndFeel.h"
-#include "ValueLabelSlider.h"
+#include "LabeledSlider.h"
 
 class AudioPluginAudioProcessor;
 
@@ -38,10 +38,10 @@ public:
         // Create ADSR sliders
         const auto& specs = ParameterSpecs::env[static_cast<size_t>(envIndex)];
 
-        setupSlider(attackSlider, attackLabel, "Attack", specs.attack.id);
-        setupSlider(decaySlider, decayLabel, "Decay", specs.decay.id);
-        setupSlider(sustainSlider, sustainLabel, "Sustain", specs.sustain.id);
-        setupSlider(releaseSlider, releaseLabel, "Release", specs.release.id);
+        setupKnob(attackKnob, "Attack", specs.attack.id);
+        setupKnob(decayKnob, "Decay", specs.decay.id);
+        setupKnob(sustainKnob, "Sustain", specs.sustain.id);
+        setupKnob(releaseKnob, "Release", specs.release.id);
         
         // Initial update
         updateEnvelopeDisplay();
@@ -49,10 +49,8 @@ public:
     
     ~EnvelopeContentPanel() override
     {
-        attackSlider.removeListener(this);
-        decaySlider.removeListener(this);
-        sustainSlider.removeListener(this);
-        releaseSlider.removeListener(this);
+        for (auto* knob : knobs())
+            knob->getSlider().removeListener(this);
     }
     
     void sliderValueChanged(juce::Slider* slider) override
@@ -75,48 +73,37 @@ public:
         auto knobSize = 50;
         auto spacing = (bounds.getWidth() - (knobSize * 4)) / 5;
         
-        juce::Slider* sliders[] = { &attackSlider, &decaySlider, &sustainSlider, &releaseSlider };
-        juce::Label* labels[] = { &attackLabel, &decayLabel, &sustainLabel, &releaseLabel };
-        
-        for (int i = 0; i < 4; ++i)
+        for (auto* knob : knobs())
         {
             bounds.removeFromLeft(spacing);
-            auto knobBounds = bounds.removeFromLeft(knobSize);
-            labels[i]->setBounds(knobBounds.removeFromTop(16));
-            sliders[i]->setBounds(knobBounds.removeFromTop(knobSize).withSizeKeepingCentre(knobSize, knobSize));
+            knob->setBounds(bounds.removeFromLeft(knobSize).withHeight(LabeledSlider<>::labelHeight + knobSize));
         }
     }
 
 private:
-    void setupSlider(ValueLabelSlider& slider, juce::Label& label,
-                     const juce::String& labelText, const juce::String& paramID)
+    std::array<LabeledSlider<>*, 4> knobs() { return { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob }; }
+
+    void setupKnob(LabeledSlider<>& knob, const juce::String& labelText, const juce::String& paramID)
     {
-        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
-        slider.addListener(this);
-        addAndMakeVisible(slider);
+        knob.setLabelText(labelText);
+        knob.setLabelColour(juce::Colour(0xff00ff41));
+        knob.getSlider().addListener(this);
+        addAndMakeVisible(knob);
         
         auto* param = processor.getAPVTS().getParameter(paramID);
         if (param != nullptr)
         {
             sliderAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-                processor.getAPVTS(), paramID, slider));
+                processor.getAPVTS(), paramID, knob.getSlider()));
         }
-        
-        label.setText(labelText, juce::dontSendNotification);
-        label.setJustificationType(juce::Justification::centred);
-        label.setColour(juce::Label::textColourId, juce::Colour(0xff00ff41));
-        addAndMakeVisible(label);
-
-        slider.attachLabel(label);
     }
     
     void updateEnvelopeDisplay()
     {
-        auto attack = attackSlider.getValue();
-        auto decay = decaySlider.getValue();
-        auto sustain = sustainSlider.getValue();
-        auto release = releaseSlider.getValue();
+        auto attack = attackKnob.getSlider().getValue();
+        auto decay = decayKnob.getSlider().getValue();
+        auto sustain = sustainKnob.getSlider().getValue();
+        auto release = releaseKnob.getSlider().getValue();
         
         envelopeEditor->setADSRValues(attack, decay, sustain, release);
     }
@@ -125,8 +112,7 @@ private:
     
     std::unique_ptr<EnvelopeEditor> envelopeEditor;
     
-    ValueLabelSlider attackSlider, decaySlider, sustainSlider, releaseSlider;
-    juce::Label attackLabel, decayLabel, sustainLabel, releaseLabel;
+    LabeledSlider<> attackKnob, decayKnob, sustainKnob, releaseKnob;
     
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> sliderAttachments;
     

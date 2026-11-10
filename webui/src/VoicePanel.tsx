@@ -1,6 +1,7 @@
 // Mirrors Source/ui/VoicePanel.h
 import type { ModulateBackend } from './backend.ts';
 import { Knob, Label, PanelBox, PillToggle, Stepper, type Rect } from './controls.tsx';
+import { LABEL_HEIGHT } from './layout.ts';
 
 const STEPPERS = [
   ['num_voices', 'VOICES'],
@@ -19,15 +20,15 @@ export function VoicePanel({ backend, bounds }: { backend: ModulateBackend; boun
       <Knob
         backend={backend}
         id="coarse_pitch"
-        bounds={{ left: 159, top: 60, width: 52, height: 52 }}
-        label={{ bounds: { left: 120, top: 45, width: 130, height: 15 }, text: 'Pitch' }}
+        bounds={{ left: 120, top: 45, width: 130, height: LABEL_HEIGHT + 52 }}
+        label={{ text: 'Pitch' }}
         modulatable
       />
       <Knob
         backend={backend}
         id="glide_time"
-        bounds={{ left: 158, top: 127, width: 53, height: 53 }}
-        label={{ bounds: { left: 120, top: 112, width: 130, height: 15 }, text: 'Glide' }}
+        bounds={{ left: 120, top: 112, width: 130, height: LABEL_HEIGHT + 53 }}
+        label={{ text: 'Glide' }}
         modulatable
       />
       <PillToggle backend={backend} id="glide_mode" bounds={{ left: 216, top: 166, width: 32, height: 14 }} text="RATE" />

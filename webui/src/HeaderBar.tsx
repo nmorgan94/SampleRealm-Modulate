@@ -4,6 +4,7 @@ import { aboutText } from './about.ts';
 import type { PresetBackend, UiInfo } from './backend.ts';
 import { FittedText, TextButton, type Rect } from './controls.tsx';
 import { juceHeight } from './fonts.ts';
+import { centred } from './layout.ts';
 import { useMenu } from './Menu.tsx';
 import { presetActions } from './presetActions.ts';
 import { PresetBar } from './PresetBar.tsx';
@@ -30,7 +31,7 @@ const layOut = (width: number, layout: HeaderLayout) => {
   const { height, edge, titleWidth, gap, controlsHeight, meterWidth, meterInset } = layout;
   const meter: Rect = { left: width - edge - meterWidth, top: meterInset, width: meterWidth, height: height - 2 * meterInset };
   const left = edge + titleWidth + gap;
-  const controls: Rect = { left, top: Math.trunc((height - controlsHeight) / 2), width: meter.left - gap - left, height: controlsHeight };
+  const controls: Rect = { left, top: centred(height, controlsHeight), width: meter.left - gap - left, height: controlsHeight };
   return {
     title: { left: edge, top: 0, width: titleWidth, height },
     meter,

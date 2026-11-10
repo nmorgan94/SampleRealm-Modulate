@@ -12,6 +12,7 @@
     <PARAM id="env2_sustain" value="0.3"/>
     <PARAM id="filter_cutoff" value="2500.0"/>
     <PARAM id="filter_resonance" value="0.1"/>
+    <PARAM id="glide_mode" value="0.0"/>
     <PARAM id="glide_time" value="0.08"/>
     <PARAM id="master_gain" value="-4.0"/>
     <PARAM id="num_voices" value="1.0"/>

@@ -57,6 +57,7 @@ namespace ParameterSpecs
 
     inline constexpr std::array filterModes { "Lowpass", "Highpass", "Bandpass", "Notch" };
     inline constexpr std::array filterSlopes { "12 dB", "24 dB" };
+    inline constexpr std::array glideModes { "Time", "Rate" };
 
     //==============================================================================
     inline constexpr Spec masterGain { "master_gain", "Master Gain", Kind::real, -24.0f, 6.0f, 0.0f, 0.1f };
@@ -139,6 +140,7 @@ namespace ParameterSpecs
     inline constexpr Spec driveHq = choice ("drive_hq", "Drive HQ", offOn, 0);
 
     inline constexpr Spec glideTime { "glide_time", "Glide Time", Kind::real, 0.0f, 2.0f, 0.0f, 0.001f, 0.4f };
+    inline constexpr Spec glideMode = choice ("glide_mode", "Glide Mode", glideModes, 1);
     inline constexpr Spec coarsePitch { "coarse_pitch", "Coarse Pitch", Kind::real, -36.0f, 36.0f, 0.0f, 0.01f };
     inline constexpr Spec numVoices = integer ("num_voices", "Voices", 1, maxVoices, maxVoices);
     inline constexpr Spec unisonVoices = integer ("unison_voices", "Unison", 1, maxUnison, 1);
@@ -186,7 +188,7 @@ namespace ParameterSpecs
         &lfo[2].mode, &lfo[2].rate, &lfo[2].sync, &lfo[2].syncRate, &lfo[2].tension,
         &lfo[3].mode, &lfo[3].rate, &lfo[3].sync, &lfo[3].syncRate, &lfo[3].tension,
         &filterEnable, &filterMode, &filterSlope, &filterCutoff, &filterResonance, &drive, &driveHq,
-        &glideTime, &coarsePitch, &numVoices, &unisonVoices, &unisonDetune, &unisonSpread,
+        &glideTime, &glideMode, &coarsePitch, &numVoices, &unisonVoices, &unisonDetune, &unisonSpread,
         &env[0].attack, &env[0].decay, &env[0].sustain, &env[0].release,
         &env[1].attack, &env[1].decay, &env[1].sustain, &env[1].release,
         &env[2].attack, &env[2].decay, &env[2].sustain, &env[2].release,

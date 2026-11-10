@@ -8,6 +8,7 @@
     <PARAM id="env1_sustain" value="0.9"/>
     <PARAM id="filter_cutoff" value="3500.0"/>
     <PARAM id="filter_resonance" value="0.2"/>
+    <PARAM id="glide_mode" value="0.0"/>
     <PARAM id="glide_time" value="0.12"/>
     <PARAM id="lfo1_mode" value="1.0"/>
     <PARAM id="lfo1_rate" value="0.35"/>

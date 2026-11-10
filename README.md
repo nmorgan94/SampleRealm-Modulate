@@ -9,7 +9,7 @@ A 3-oscillator wavetable synthesizer with deep modulation
 - 21 waveforms — Sine, Saw, Square, Triangle, Pulse 25%, Pulse 10%, Formant Sine, Formant Vowel, Bitcrushed Ramp, FM Operator, Feedback FM, Wavefolded Sine, Fractal Pulse, Double Saw, Resonant Saw, Prime Cluster, Odd Harmonic Cluster, Log Square, Asymmetric Rectified Sine, Interleaved Saw Pulse, and Trapezoid
 - A/B morphing — pick any two waveforms per oscillator and sweep continuously between them
 - Coarse (±36 semitones) and fine (±99 cents) pitch per oscillator, plus a global coarse pitch
-- Glide / portamento up to 2 seconds, with legato detection
+- Glide up to 2 seconds, as a fixed time or per octave, and legato with one voice
 - Unison up to 7 voices with adjustable detune and stereo spread
 - Selectable polyphony, 1 to 8 voices
 - Real-time waveform visualization

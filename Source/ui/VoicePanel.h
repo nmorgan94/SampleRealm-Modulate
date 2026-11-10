@@ -60,6 +60,13 @@ public:
 
         glideAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             apvts, ParameterSpecs::glideTime.id, glideSlider);
+
+        rateButton.setButtonText("RATE");
+        rateButton.getProperties().set("pillToggle", true);
+        addAndMakeVisible(rateButton);
+
+        rateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+            apvts, ParameterSpecs::glideMode.id, rateButton);
     }
 
     void paint(juce::Graphics& g) override
@@ -104,6 +111,7 @@ public:
         glideLabel.setBounds(rightColumn.removeFromTop(15));
         auto glideSize = juce::jmin(rightColumn.getWidth(), rightColumn.getHeight());
         glideSlider.setBounds(rightColumn.withSizeKeepingCentre(glideSize, glideSize));
+        rateButton.setBounds(glideSlider.getRight() + 5, glideSlider.getBottom() - 14, 32, 14);
     }
 
 private:
@@ -116,9 +124,11 @@ private:
     StepperDisplay spreadDisplay;
     ModulatableSlider coarsePitchSlider;
     ModulatableSlider glideSlider;
+    juce::ToggleButton rateButton;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> coarsePitchAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> glideAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> rateAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VoicePanel)
 };

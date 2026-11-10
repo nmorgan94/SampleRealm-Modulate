@@ -10,6 +10,7 @@
     <PARAM id="filter_cutoff" value="600.0"/>
     <PARAM id="filter_resonance" value="0.01"/>
     <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="glide_mode" value="0.0"/>
     <PARAM id="glide_time" value="0.04"/>
     <PARAM id="master_gain" value="-8.0"/>
     <PARAM id="num_voices" value="1.0"/>

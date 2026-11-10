@@ -11,6 +11,7 @@
     <PARAM id="filter_cutoff" value="743.0"/>
     <PARAM id="filter_resonance" value="0.35"/>
     <PARAM id="filter_slope" value="1.0"/>
+    <PARAM id="glide_mode" value="0.0"/>
     <PARAM id="glide_time" value="0.03"/>
     <PARAM id="lfo1_sync" value="1.0"/>
     <PARAM id="lfo1_sync_rate" value="3.0"/>

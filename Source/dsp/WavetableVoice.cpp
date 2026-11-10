@@ -18,22 +18,12 @@ void WavetableVoice::startNote(int midiNoteNumber, float velocity,
 {
     juce::ignoreUnused(sound, currentPitchWheelPosition);
     
-    currentMidiNote = midiNoteNumber;
-    currentFrequency = juce::MidiMessage::getMidiNoteInHertz(midiNoteNumber);
+    owner.legato.start(glide, midiNoteNumber, owner.modulated(ParameterSpecs::glideTime), owner.glideMode(), getSampleRate());
+
+    if (sliding)
+        return;
 
     level = velocity;
-
-    const bool   legato       = owner.getHeldNoteCount() > 0;
-    const float  glideTime    = owner.modulated(ParameterSpecs::glideTime);
-    const double glideSeconds = (legato && glideTime > 0.0f) ? glideTime : 0.0;
-
-    const double startRatio = (glideSeconds > 0.0)
-        ? juce::MidiMessage::getMidiNoteInHertz(juce::roundToInt(owner.getLastNotePitch())) / currentFrequency
-        : 1.0;
-
-    glideRatio.reset(getSampleRate(), glideSeconds);
-    glideRatio.setCurrentAndTargetValue(startRatio);
-    glideRatio.setTargetValue(1.0);
 
     for (int osc = 0; osc < 3; ++osc)
     {
@@ -54,6 +44,9 @@ void WavetableVoice::startNote(int midiNoteNumber, float velocity,
 void WavetableVoice::stopNote(float velocity, bool allowTailOff)
 {
     juce::ignoreUnused(velocity);
+
+    if (sliding)
+        return;
 
     if (allowTailOff)
     {
@@ -93,8 +86,7 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
         return;
     }
 
-    const double currentGlideRatio = glideRatio.getCurrentValue();
-    glideRatio.skip(numSamples);
+    const double glidePeak = glide.peakRatio();
 
     const int   unisonCount  = juce::jlimit(1, ParameterSpecs::maxUnison,
                                             juce::roundToInt(owner.modulated(ParameterSpecs::unisonVoices)));
@@ -121,8 +113,7 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
     const float* oscData[3][ParameterSpecs::maxUnison];
     double       oscPhaseIncrement[3][ParameterSpecs::maxUnison];
 
-    const float  coarseSemis = owner.modulated(ParameterSpecs::coarsePitch);
-    const double coarseRatio = std::pow(2.0, coarseSemis / 12.0);
+    const double coarseSemis = owner.modulated(ParameterSpecs::coarsePitch);
 
     const bool  noiseEnabled = owner.isOn(ParameterSpecs::noiseEnable);
     const float noiseLevel   = owner.modulated(ParameterSpecs::noiseLevel);
@@ -139,15 +130,14 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
             continue;
 
         const int    pitchOffset   = juce::roundToInt(owner.modulated(specs.pitch));
-        const double fineRatio     = std::pow(2.0, owner.modulated(specs.fine) / 1200.0);
-        const double oscFrequency  = juce::MidiMessage::getMidiNoteInHertz(currentMidiNote + pitchOffset) * currentGlideRatio * coarseRatio * fineRatio;
+        const double oscFrequency  = noteNumberToFrequencyHz(glide.getNoteNumber() + pitchOffset + coarseSemis + owner.modulated(specs.fine) / 100.0);
         const double baseIncrement = oscFrequency * WavetableBank::size / getSampleRate();
 
         for (int u = 0; u < unisonCount; ++u)
         {
             oscPhaseIncrement[osc][u] = baseIncrement * unisonRatio[u];
 
-            const int tableLevel = WavetableBank::levelFor(oscFrequency * unisonRatio[u], getSampleRate());
+            const int tableLevel = WavetableBank::levelFor(oscFrequency * unisonRatio[u] * glidePeak, getSampleRate());
             oscData[osc][u] = tableLevel < 0 ? nullptr : owner.tableFor(osc, tableLevel);
         }
     }
@@ -158,6 +148,7 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
     for (int sample = 0; sample < numSamples; ++sample)
     {
         float left = 0.0f, right = 0.0f;
+        const double glideRatio = glide.getNextRatio();
 
         for (int osc = 0; osc < 3; ++osc)
         {
@@ -176,7 +167,7 @@ void WavetableVoice::renderNextBlock(juce::AudioBuffer<float>& outputBuffer,
                 left  += s * unisonPanL[u];
                 right += s * unisonPanR[u];
 
-                phase += oscPhaseIncrement[osc][u];
+                phase += oscPhaseIncrement[osc][u] * glideRatio;
                 while (phase >= WavetableBank::size)
                     phase -= WavetableBank::size;
             }
@@ -231,18 +222,46 @@ WavetableSynthesiser::WavetableSynthesiser(ModulateSynth& synth)
 
 void WavetableSynthesiser::noteOn(int midiChannel, int midiNoteNumber, float velocity)
 {
-    juce::Synthesiser::noteOn(midiChannel, midiNoteNumber, velocity);
-    owner.registerNoteStart(midiNoteNumber);
+    if (auto* voice = owner.legato.isHeld() ? monoVoice() : nullptr)
+        slide(*voice, midiChannel, midiNoteNumber, velocity);
+    else
+        juce::Synthesiser::noteOn(midiChannel, midiNoteNumber, velocity);
+
+    owner.legato.press(midiNoteNumber);
 }
 
 void WavetableSynthesiser::noteOff(int midiChannel, int midiNoteNumber, float velocity, bool allowTailOff)
 {
-    owner.registerNoteStop(midiNoteNumber);
+    owner.legato.release(midiNoteNumber);
+
+    // Back to the newest key still held
+    if (auto* voice = monoVoice(); voice != nullptr && owner.legato.isHeld() && voice->getCurrentlyPlayingNote() == midiNoteNumber)
+    {
+        slide(*voice, midiChannel, owner.legato.newest(), velocity);
+        return;
+    }
+
     juce::Synthesiser::noteOff(midiChannel, midiNoteNumber, velocity, allowTailOff);
 }
 
 void WavetableSynthesiser::allNotesOff(int midiChannel, bool allowTailOff)
 {
     juce::Synthesiser::allNotesOff(midiChannel, allowTailOff);
-    owner.clearHeldNotes();
+    owner.legato.clear();
+}
+
+WavetableVoice* WavetableSynthesiser::monoVoice() const
+{
+    auto* voice = owner.voices.front();
+    return owner.isMono() && voice->isVoiceActive() && voice->isKeyDown() ? voice : nullptr;
+}
+
+// startVoice keeps JUCE's note for the voice
+void WavetableSynthesiser::slide(WavetableVoice& voice, int midiChannel, int midiNoteNumber, float velocity)
+{
+    const juce::ScopedLock sl(lock);
+
+    voice.setSliding(true);
+    startVoice(&voice, voice.getCurrentlyPlayingSound().get(), midiChannel, midiNoteNumber, velocity);
+    voice.setSliding(false);
 }

@@ -23,7 +23,10 @@ aliasing, at more CPU.
 
 - VOICES is how many notes can play at once.
 - UNISON stacks copies of each note. DETUNE spreads their pitch and SPREAD their stereo position.
-- PITCH moves every oscillator in semitones. GLIDE slides from one note to the next.
+- PITCH moves every oscillator in semitones. GLIDE slides to a note played while another is held.
+- With RATE on, the glide time is the time for an octave, so smaller steps slide faster. Off, every slide
+  takes the same time.
+- With one voice, notes played legato slide without restarting, and letting go returns to the key still held.
 
 ## LFOs
 

@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "ADSREnvelope.h"
+#include "Glide.h"
 #include "NoiseGenerator.h"
 #include "../shared/ParameterSpecs.h"
 
@@ -16,6 +17,9 @@ public:
     bool canPlaySound(juce::SynthesiserSound* sound) override;
 
     void setWithinVoiceLimit(bool isWithinLimit) { withinVoiceLimit = isWithinLimit; }
+
+    // Next note slides on without restarting
+    void setSliding(bool shouldSlide) { sliding = shouldSlide; }
 
     void startNote(int midiNoteNumber, float velocity,
                    juce::SynthesiserSound* sound,
@@ -35,10 +39,9 @@ private:
     double currentPhases[3][ParameterSpecs::maxUnison] = {};
     juce::Random unisonRandom;
     float level = 0.0f;
-    double currentFrequency = 0.0;
-    int currentMidiNote = 0;
 
-    juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative> glideRatio;
+    GlideProcessor glide;
+    bool sliding = false;
 
     ADSREnvelope envelope;
     NoiseGenerator noise;
@@ -64,8 +67,7 @@ private:
 };
 
 //==============================================================================
-// Tracks physically-held MIDI notes at the note-on/off level (rather than per
-// voice) so glide still works when the voice is stolen, e.g. in a 1-voice patch.
+// Mono legato with one voice
 class WavetableSynthesiser : public juce::Synthesiser
 {
 public:
@@ -77,6 +79,9 @@ public:
 
 private:
     ModulateSynth& owner;
+
+    WavetableVoice* monoVoice() const;
+    void slide(WavetableVoice& voice, int midiChannel, int midiNoteNumber, float velocity);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(WavetableSynthesiser)
 };

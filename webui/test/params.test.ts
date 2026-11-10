@@ -164,6 +164,9 @@ const pluginText: [id: string, proportion: number, text: string][] = [
   ['glide_time', 0, '0.000'],
   ['glide_time', 0.5, '0.354'],
   ['glide_time', 1, '2.000'],
+  ['glide_mode', 0, 'Time'],
+  ['glide_mode', 0.5, 'Time'],
+  ['glide_mode', 1, 'Rate'],
   ['coarse_pitch', 0, '-36.00'],
   // The plugin shows -0.00, from float rounding that doubles don't have
   ['coarse_pitch', 0.5, '0.00'],

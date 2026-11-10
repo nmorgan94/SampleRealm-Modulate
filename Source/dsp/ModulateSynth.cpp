@@ -65,8 +65,7 @@ void ModulateSynth::prepare(double sampleRate, int maximumBlockSize, int numChan
     currentVoiceCount = -1;
     updateVoiceCount();
 
-    heldNotes.clear();
-    heldNotes.reserve(128);
+    legato.clear();
 }
 
 void ModulateSynth::setSettings(const Settings& newSettings)
@@ -153,13 +152,6 @@ void ModulateSynth::resetModulationEnvelopes()
 {
     for (auto& envelope : envelopes)
         envelope.reset();
-}
-
-void ModulateSynth::registerNoteStop(int midiNote)
-{
-    auto noteEntry = std::find(heldNotes.begin(), heldNotes.end(), midiNote);
-    if (noteEntry != heldNotes.end())
-        heldNotes.erase(noteEntry);
 }
 
 //==============================================================================

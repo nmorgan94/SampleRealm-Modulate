@@ -21,6 +21,11 @@ namespace
         juce::AudioProcessor::copyXmlToBinary (xml, state);
         processor.setStateInformation (state.getData(), static_cast<int> (state.getSize()));
     }
+
+    bool isMissingFrom (const juce::XmlElement& session, const ParameterSpecs::Spec& spec)
+    {
+        return session.getChildByAttribute ("id", spec.id) == nullptr;
+    }
 }
 
 //==============================================================================
@@ -44,7 +49,19 @@ TEST_CASE_METHOD (ProcessorFixture, "A session saved by 0.0.1 loads the same", "
             ++numParams;
         }
 
-        CHECK (numParams == processor.getParameters().size());
+        CHECK (numParams > 0);
+    }
+
+    SECTION ("Parameters added since at their defaults")
+    {
+        for (const auto* spec : ParameterSpecs::all)
+        {
+            if (! isMissingFrom (*session, *spec))
+                continue;
+
+            CAPTURE (spec->id);
+            CHECK_THAT (getParameter (processor, spec->id), WithinAbs (spec->defaultValue, 1.0e-6));
+        }
     }
 
     SECTION ("Modulation assignments")
@@ -89,6 +106,10 @@ TEST_CASE_METHOD (ProcessorFixture, "A session saved by 0.0.1 loads the same", "
             CHECK (resaved->hasAttribute (name));
             resaved->removeAttribute (name);
         }
+
+        for (const auto* spec : ParameterSpecs::all)
+            if (isMissingFrom (*session, *spec))
+                resaved->removeChildElement (resaved->getChildByAttribute ("id", spec->id), true);
 
         CHECK (resaved->isEquivalentTo (session.get(), true));
     }

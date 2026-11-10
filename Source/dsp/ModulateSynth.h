@@ -8,6 +8,7 @@
 #include "ADSREnvelope.h"
 #include "Drive.h"
 #include "Filter.h"
+#include "Glide.h"
 #include "LFO.h"
 #include "LfoCurve.h"
 #include "Modulation.h"
@@ -90,11 +91,8 @@ private:
     void releaseModulationEnvelopes();
     void resetModulationEnvelopes();
 
-    int getHeldNoteCount() const { return static_cast<int>(heldNotes.size()); }
-    double getLastNotePitch() const { return heldNotes.empty() ? 60.0 : static_cast<double>(heldNotes.back()); }
-    void registerNoteStart(int midiNote) { heldNotes.push_back(midiNote); }
-    void registerNoteStop(int midiNote);
-    void clearHeldNotes() { heldNotes.clear(); }
+    GlideMode glideMode() const { return static_cast<GlideMode>(choiceOf(ParameterSpecs::glideMode)); }
+    bool isMono() const { return currentVoiceCount == 1; }
 
     void updateLfoShapes(bool force);
     void updateLfos();
@@ -129,7 +127,7 @@ private:
     Live live;
 
     int currentVoiceCount = -1;
-    std::vector<int> heldNotes;
+    Legato legato;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulateSynth)
 };

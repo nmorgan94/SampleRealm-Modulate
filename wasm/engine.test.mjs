@@ -91,8 +91,8 @@ test('the ui info carries the version, the commit, the build type and every para
   assert.match(info.version, /^\d+\.\d+\.\d+$/);
   assert.match(info.commit, /^([0-9a-f]{7,}(-local)?|unknown)$/);
   assert.match(info.build, /^(Debug|Release)$/);
-  assert.equal(info.params.length, 74);
-  assert.equal(new Set(info.params.map((p) => p.id)).size, 74);
+  assert.equal(info.params.length, 75);
+  assert.equal(new Set(info.params.map((p) => p.id)).size, 75);
   assert.deepEqual(info.params.find((p) => p.id === 'glide_time'), {
     id: 'glide_time', name: 'Glide Time', kind: 'real', min: 0, max: 2, defaultValue: 0,
     step: 0.001, skew: 0.4, unit: '', choices: [],
@@ -151,6 +151,71 @@ test('with one voice, a second held note glides there from the first', () => {
 
   assert.ok(midGlide > 240 && midGlide < 420, `mid-glide ${midGlide} Hz`);
   assert.ok(Math.abs(settled - 440) < 3, `settled ${settled} Hz`);
+});
+
+test('in Rate mode the glide time is per octave, and in Time mode it is per slide', () => {
+  const glideFrom45 = (mode, note) => {
+    const e = sineEngine();
+    e.set('num_voices', 1);
+    e.set('glide_time', 0.2);
+    e.set('glide_mode', mode);
+    e.midi(noteOn, 45, 100);
+    e.play(0.1);
+    e.midi(noteOn, note, 100);
+    return frequency(seconds(e.play(0.45).left, 0.25, 0.45));
+  };
+
+  const rateOctave = glideFrom45(1, 57);
+  const rateTwoOctaves = glideFrom45(1, 69);
+  const timeTwoOctaves = glideFrom45(0, 69);
+
+  assert.ok(Math.abs(rateOctave - 220) < 10, `Rate, one octave ${rateOctave} Hz`);
+  assert.ok(rateTwoOctaves > 330 && rateTwoOctaves < 400, `Rate, two octaves ${rateTwoOctaves} Hz`);
+  assert.ok(Math.abs(timeTwoOctaves - 440) < 10, `Time, two octaves ${timeTwoOctaves} Hz`);
+});
+
+test('a note played mid-glide slides on from where the pitch is', () => {
+  const e = sineEngine();
+  e.set('num_voices', 1);
+  e.set('glide_time', 0.4);
+  e.set('glide_mode', 0);
+  e.midi(noteOn, 45, 100);
+  e.play(0.1);
+  e.midi(noteOn, 69, 100);
+  e.play(0.2);
+  e.midi(noteOn, 64, 100);
+
+  const start = frequency(e.play(0.1).left);
+
+  assert.ok(Math.abs(start - 231) < 15, `start ${start} Hz`);
+});
+
+test('with one voice, a note played legato keeps the envelope going', () => {
+  const e = sineEngine();
+  e.set('num_voices', 1);
+  e.set('env1_attack', 1);
+  e.midi(noteOn, 57, 100);
+  const before = peak(e.play(0.5).left.slice(-8 * blockSize));
+  e.midi(noteOn, 64, 100);
+  const after = peak(e.play(0.02).left);
+
+  assert.ok(after > 0.9 * before, `${before} before, ${after} after`);
+});
+
+test('with one voice, letting go of a key returns to the one still held', () => {
+  const e = sineEngine();
+  e.set('num_voices', 1);
+  e.midi(noteOn, 57, 100);
+  e.play(0.1);
+  e.midi(noteOn, 69, 100);
+  e.play(0.1);
+  e.midi(noteOff, 69, 0);
+
+  const { left } = e.play(0.5);
+  const held = frequency(seconds(left, 0.1, 0.5));
+
+  assert.ok(Math.abs(held - 220) < 3, `held ${held} Hz`);
+  assert.ok(peak(seconds(left, 0.4, 0.5)) > 0.1);
 });
 
 test('unison spread splits the voices between left and right', () => {

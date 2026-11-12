@@ -23,11 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Keeps JUCE, pluginval and Catch2 between runs; any edit to the CMake files starts a fresh cache
+      # Keeps JUCE, pluginval and Catch2 between runs; after an edit to the CMake files or the modules pin only what changed is fetched
       - uses: actions/cache@v6
         with:
           path: .cpm-cache
-          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/*.cmake') }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/*.cmake', 'webui/package.json') }}
+          restore-keys: cpm-${{ runner.os }}-
 
       - name: Build (Release)
         run: cmake --workflow --preset release

@@ -1,22 +1,22 @@
 // Mirrors AudioPluginAudioProcessorEditor
 import { memo, useCallback, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { EditorRootContext } from '@samplerealm/modules/editor/editorRoot.ts';
+import { HeaderBar, type HeaderLayout } from '@samplerealm/modules/editor/HeaderBar.tsx';
+import { useManual } from '@samplerealm/modules/editor/ManualOverlay.tsx';
+import { toProportion } from '@samplerealm/modules/editor/params.ts';
+import { usePrompt } from '@samplerealm/modules/editor/PromptOverlay.tsx';
+import manualText from '../../Assets/Manual.md?raw';
 import type { ModulateBackend, ModulationSource } from './backend.ts';
 import { Cross, MOD_TARGET, ModulationDragContext, type ModulationDrag } from './controls.tsx';
-import { EDITOR_HEIGHT, EDITOR_WIDTH, EditorRootContext, pointIn } from './editorRoot.ts';
 import { EnvelopePanel } from './EnvelopePanel.tsx';
 import { FilterPanel } from './FilterPanel.tsx';
-import { HeaderBar, type HeaderLayout } from './HeaderBar.tsx';
+import { EDITOR_HEIGHT, EDITOR_WIDTH, pointIn } from './layout.ts';
 import { LfoPanel } from './LfoPanel.tsx';
-import { useManual } from './ManualOverlay.tsx';
 import { MasterMeter } from './MasterMeter.tsx';
 import { makeDefaultRange } from './modulation.ts';
 import { NoisePanel } from './NoisePanel.tsx';
 import { OscillatorPanel } from './OscillatorPanel.tsx';
-import { toProportion } from './params.ts';
-import { usePrompt } from './PromptOverlay.tsx';
 import { VoicePanel } from './VoicePanel.tsx';
-
-export { EDITOR_HEIGHT, EDITOR_WIDTH };
 
 // AudioPluginAudioProcessorEditor::headerLayout
 const HEADER_LAYOUT: HeaderLayout = {
@@ -37,7 +37,7 @@ export const ModulateEditor = memo(function ModulateEditor({ backend }: { backen
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [dragging, setDragging] = useState<Dragging | null>(null);
   const { prompt, overlay } = usePrompt();
-  const manual = useManual();
+  const manual = useManual(manualText);
 
   const inEditor = useCallback(
     (clientX: number, clientY: number) => (root ? pointIn(root, EDITOR_WIDTH, clientX, clientY) : { x: clientX, y: clientY }),

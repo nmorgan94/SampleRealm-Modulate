@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ModulatableSlider.h"
-#include "LabeledSlider.h"
+#include "LabeledKnob.h"
 #include "FilterResponseDisplay.h"
 
 class AudioPluginAudioProcessor;
@@ -212,11 +212,11 @@ private:
     juce::ComboBox modeSelector;
     juce::ComboBox slopeSelector;
 
-    LabeledSlider<ModulatableSlider> driveKnob;
+    LabeledKnob<ModulatableSlider> driveKnob;
     juce::ToggleButton hqButton;
 
-    LabeledSlider<ModulatableSlider> cutoffKnob;
-    LabeledSlider<ModulatableSlider> resonanceKnob;
+    LabeledKnob<ModulatableSlider> cutoffKnob;
+    LabeledKnob<ModulatableSlider> resonanceKnob;
 
     FilterResponseDisplay responseDisplay;
     

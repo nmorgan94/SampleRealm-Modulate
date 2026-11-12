@@ -1,3 +1,4 @@
 @import 'tailwindcss' source('..');
 @source not '../plugin';
+@source '../../node_modules/@samplerealm/modules/web';
 @import '../styles.css';

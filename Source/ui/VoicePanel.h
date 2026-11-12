@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ModulatableSlider.h"
-#include "LabeledSlider.h"
+#include "LabeledKnob.h"
 #include "StepperDisplay.h"
 #include "../Parameters.h"
 
@@ -109,8 +109,8 @@ private:
     StepperDisplay unisonDisplay;
     StepperDisplay detuneDisplay;
     StepperDisplay spreadDisplay;
-    LabeledSlider<ModulatableSlider> coarsePitchKnob;
-    LabeledSlider<ModulatableSlider> glideKnob;
+    LabeledKnob<ModulatableSlider> coarsePitchKnob;
+    LabeledKnob<ModulatableSlider> glideKnob;
     juce::ToggleButton rateButton;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> coarsePitchAttachment;

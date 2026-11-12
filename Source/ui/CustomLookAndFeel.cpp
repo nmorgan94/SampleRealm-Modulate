@@ -1,6 +1,4 @@
 #include "CustomLookAndFeel.h"
-#include "HeaderBar.h"
-#include "LevelMeter.h"
 #include <BinaryData.h>
 #include <map>
 
@@ -58,6 +56,10 @@ CustomLookAndFeel::CustomLookAndFeel()
     setColour(juce::CaretComponent::caretColourId, juce::Colour(0xff00ff41));
 
     setColour(juce::ScrollBar::thumbColourId, juce::Colour(0xff3a3a3a));
+
+    // TextButton's background and outline, and --color-widget and --color-line in webui/src/styles.css
+    setColour(juce::TextButton::buttonColourId, juce::Colour(0xff2a2a2a));
+    setColour(juce::ComboBox::outlineColourId, juce::Colour(0xff303030));
 }
 
 juce::FontOptions CustomLookAndFeel::orbitron (float weight)

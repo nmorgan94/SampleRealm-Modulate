@@ -8,9 +8,6 @@ namespace Parameters
 {
     inline constexpr int versionHint = 1;
 
-    // Built from ParameterSpecs::all, in its order
-    juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
-
     // Where the parameter is in ParameterSpecs::all
     inline std::optional<size_t> indexOf (const juce::String& id)
     {

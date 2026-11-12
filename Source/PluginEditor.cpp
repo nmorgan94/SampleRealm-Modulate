@@ -37,7 +37,6 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     lfoPanel = std::make_unique<LFOPanel>(processorRef);
     addAndMakeVisible(lfoPanel.get());
     
-    prompt.setFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::regularWeight).withHeight (14.0f));
     addChildComponent(prompt);
     addChildComponent(manual);
 

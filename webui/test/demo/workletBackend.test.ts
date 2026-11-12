@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MAX_CURVE_POINTS, type Level, type Live } from '../../src/backend.ts';
-import { workletBackend, type EnginePort } from '../../src/demo/workletBackend.ts';
+import type { EnginePort } from '@samplerealm/modules/demo/workletBackend.ts';
+import { workletBackend } from '../../src/demo/workletBackend.ts';
 import { indexOf, info } from '../engine.ts';
 
 const fakePort = () => {

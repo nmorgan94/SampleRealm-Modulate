@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { parsePreset } from '@samplerealm/modules/demo/localPresets.ts';
+import { snap } from '@samplerealm/modules/editor/params.ts';
 import { NUM_LFOS } from '../src/backend.ts';
-import { parsePreset } from '../src/demo/localPresets.ts';
-import { snap } from '../src/params.ts';
+import { parsePresetState } from '../src/demo/presetState.ts';
 import { engine, param } from './engine.ts';
 
 // Typos here would load silently as defaults
 const DIR = new URL('../../Assets/Presets/', import.meta.url);
 const presets = readdirSync(DIR)
   .filter((file) => file.endsWith('.modulate'))
-  .map((file) => ({ file, ...parsePreset(readFileSync(new URL(file, DIR), 'utf8')) }));
+  .map((file) => ({ file, ...parsePreset(readFileSync(new URL(file, DIR), 'utf8'), parsePresetState) }));
 
 test('there are factory presets, each named after its file and in a category', () => {
   assert.ok(presets.length > 0);

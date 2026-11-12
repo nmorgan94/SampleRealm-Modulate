@@ -1,8 +1,8 @@
 #pragma once
-#include <juce_gui_basics/juce_gui_basics.h>
-#include "ModalOverlay.h"
+#include <editor/editor.h>
 
-class CustomLookAndFeel : public juce::LookAndFeel_V4
+class CustomLookAndFeel : public juce::LookAndFeel_V4,
+                          public EditorFonts
 {
 public:
 
@@ -13,7 +13,12 @@ public:
 
     // From the one variable font
     [[nodiscard]] static juce::FontOptions orbitron(float weight);
-    
+
+    juce::Font getEditorFont(float height, bool bold) override
+    {
+        return orbitron(bold ? boldWeight : regularWeight).withHeight(height);
+    }
+
     void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
                          bool /*shouldDrawButtonAsHighlighted*/, bool /*shouldDrawButtonAsDown*/) override
     {
@@ -115,8 +120,7 @@ public:
             return;
         }
 
-        // Ticked items, such as the current preset, are green instead of ticked
-        auto colour = isTicked ? juce::Colour(0xff00ff41) : juce::Colours::white;
+        auto colour = juce::Colours::white;
 
         if (! isActive)
         {
@@ -129,7 +133,15 @@ public:
             colour = juce::Colour(0xff00ff41);
         }
 
-        auto r = area.reduced(10, 0);
+        auto r = area.reduced(4, 0);
+        const auto tickArea = r.removeFromLeft(area.getHeight()).toFloat();
+
+        if (isTicked)
+        {
+            const auto tick = getTickShape(1.0f);
+            g.setColour(colour);
+            g.fillPath(tick, tick.getTransformToScaleToFit(tickArea.reduced(tickArea.getWidth() / 5.0f), true));
+        }
 
         if (hasSubMenu)
         {
@@ -154,36 +166,10 @@ public:
         g.drawFittedText(sectionName, area.reduced(10, 0), juce::Justification::centredLeft, 1);
     }
 
-    void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour&,
-                              bool isHighlighted, bool isDown) override
-    {
-        const auto bounds = button.getLocalBounds().toFloat().reduced(0.5f);
-
-        g.setColour(juce::Colour(0xff2a2a2a));
-        g.fillRoundedRectangle(bounds, 4.0f);
-
-        g.setColour((isHighlighted || isDown) && button.isEnabled() ? juce::Colour(0xff00ff41) : juce::Colour(0xff3a3a3a));
-        g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
-    }
-
-    void drawButtonText(juce::Graphics& g, juce::TextButton& button, bool isHighlighted, bool isDown) override
-    {
-        auto colour = juce::Colours::white;
-
-        if (! button.isEnabled())
-            colour = juce::Colour(0xff666666);
-        else if (isHighlighted || isDown)
-            colour = juce::Colour(0xff00ff41);
-
-        g.setColour(colour);
-        g.setFont(getTextButtonFont(button, button.getHeight()));
-        g.drawFittedText(button.getButtonText(), button.getLocalBounds().reduced(4, 0),
-                         juce::Justification::centred, 1);
-    }
-
+    // As web/editor/controls.tsx's TextButton
     juce::Font getTextButtonFont(juce::TextButton&, int) override
     {
-        return orbitron(regularWeight).withHeight(14.0f);
+        return orbitron(regularWeight).withHeight(12.0f);
     }
     
     juce::Font getLabelFont(juce::Label& label) override

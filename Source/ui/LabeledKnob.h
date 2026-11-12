@@ -6,15 +6,15 @@
 //==============================================================================
 /** A knob with its name above, which shows the value while it's being moved. Click the name to type a value. */
 template <typename SliderType = RotarySlider>
-class LabeledSlider : public juce::Component,
-                      private juce::Slider::Listener,
-                      private juce::Timer
+class LabeledKnob : public juce::Component,
+                    private juce::Slider::Listener,
+                    private juce::Timer
 {
     static_assert (std::is_base_of_v<RotarySlider, SliderType>);
 
 public:
     template <typename... Args>
-    explicit LabeledSlider (Args&&... sliderArgs)
+    explicit LabeledKnob (Args&&... sliderArgs)
         : slider (std::forward<Args> (sliderArgs)...)
     {
         slider.setShowsPopup (false);
@@ -106,5 +106,5 @@ private:
         showName();
     }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LabeledSlider)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LabeledKnob)
 };

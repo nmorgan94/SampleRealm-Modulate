@@ -1,26 +1,15 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
+#include <EditorFixtures.h>
+#include <samplerealm/BuildCommit.h>
+
 #include "TestHelpers.h"
 #include "PluginEditor.h"
 
 using namespace TestHelpers;
+using EditorFixtures::descendantsOf;
 using Catch::Matchers::WithinAbs;
-
-namespace
-{
-    template <typename ComponentType>
-    void findAll (juce::Component& parent, std::vector<ComponentType*>& found)
-    {
-        for (auto* child : parent.getChildren())
-        {
-            if (auto* match = dynamic_cast<ComponentType*> (child))
-                found.push_back (match);
-
-            findAll (*child, found);
-        }
-    }
-}
 
 //==============================================================================
 TEST_CASE_METHOD (ProcessorFixture, "The editor's text is Orbitron", "[editor][font]")
@@ -28,8 +17,7 @@ TEST_CASE_METHOD (ProcessorFixture, "The editor's text is Orbitron", "[editor][f
     AudioPluginAudioProcessorEditor editor (processor);
     auto& lookAndFeel = editor.getLookAndFeel();
 
-    std::vector<juce::Label*> labels;
-    findAll (editor, labels);
+    const auto labels = descendantsOf<juce::Label> (editor);
     REQUIRE (labels.size() > 20);
 
     for (auto* label : labels)
@@ -38,15 +26,13 @@ TEST_CASE_METHOD (ProcessorFixture, "The editor's text is Orbitron", "[editor][f
         CHECK (lookAndFeel.getLabelFont (*label).getTypefacePtr()->getName() == "Orbitron");
     }
 
-    std::vector<juce::ComboBox*> boxes;
-    findAll (editor, boxes);
+    const auto boxes = descendantsOf<juce::ComboBox> (editor);
     REQUIRE (! boxes.empty());
 
     for (auto* box : boxes)
         CHECK (lookAndFeel.getComboBoxFont (*box).getTypefacePtr()->getName() == "Orbitron");
 
-    std::vector<juce::TextButton*> buttons;
-    findAll (editor, buttons);
+    const auto buttons = descendantsOf<juce::TextButton> (editor);
     REQUIRE (buttons.size() >= 5);
 
     for (auto* button : buttons)
@@ -60,8 +46,7 @@ TEST_CASE_METHOD (ProcessorFixture, "The header fits the title, the preset bar a
 {
     AudioPluginAudioProcessorEditor editor (processor);
 
-    std::vector<HeaderBar*> headers;
-    findAll (editor, headers);
+    const auto headers = descendantsOf<HeaderBar> (editor);
     REQUIRE (headers.size() == 1);
 
     const auto& layout = AudioPluginAudioProcessorEditor::headerLayout;
@@ -72,13 +57,11 @@ TEST_CASE_METHOD (ProcessorFixture, "The header fits the title, the preset bar a
     const juce::Font titleFont (CustomLookAndFeel::orbitron (CustomLookAndFeel::boldWeight).withHeight (layout.titleHeight));
     CHECK (juce::GlyphArrangement::getStringWidth (titleFont, headers[0]->getTitle()) * 0.7f <= static_cast<float> (layout.titleWidth));
 
-    std::vector<PresetBar*> bars;
-    findAll (*headers[0], bars);
+    const auto bars = descendantsOf<PresetBar> (*headers[0]);
     REQUIRE (bars.size() == 1);
     CHECK (bars[0]->getX() > layout.edge + layout.titleWidth);
 
-    std::vector<MasterMeter*> meters;
-    findAll (*headers[0], meters);
+    const auto meters = descendantsOf<MasterMeter> (*headers[0]);
     REQUIRE (meters.size() == 1);
     CHECK (bars[0]->getRight() < meters[0]->getX());
 }
@@ -87,13 +70,12 @@ TEST_CASE ("A labelled knob takes a typed value, snapped, and ignores words", "[
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
-    LabeledSlider<> knob;
+    LabeledKnob<> knob;
     knob.setLabelText ("Release");
     auto& slider = knob.getSlider();
     slider.setRange (0.0, 5.0, 0.5);
 
-    std::vector<juce::Label*> labels;
-    findAll (knob, labels);
+    const auto labels = descendantsOf<juce::Label> (knob);
     REQUIRE (labels.size() == 1);
     CHECK (labels[0]->getText() == "Release");
     CHECK (slider.getTitle() == "Release");
@@ -111,12 +93,11 @@ TEST_CASE ("A labelled knob takes a typed value, snapped, and ignores words", "[
 TEST_CASE_METHOD (ProcessorFixture, "A labelled choice knob takes only its names as typed values", "[editor]")
 {
     const auto* id = ParameterSpecs::lfo[0].syncRate.id;
-    LabeledSlider<ModulatableSlider> knob (processor, id);
+    LabeledKnob<ModulatableSlider> knob (processor, id);
     juce::AudioProcessorValueTreeState::SliderAttachment attachment (processor.getAPVTS(), id, knob.getSlider());
     auto& slider = knob.getSlider();
 
-    std::vector<juce::Label*> labels;
-    findAll (knob, labels);
+    const auto labels = descendantsOf<juce::Label> (knob);
     REQUIRE (labels.size() == 1);
     REQUIRE (slider.getValue() == 6.0);
 
@@ -161,7 +142,7 @@ TEST_CASE_METHOD (ProcessorFixture, "About shows the version and build type, the
    #else
     CHECK (lines[1] == "Release build");
    #endif
-    CHECK (lines[2] == juce::String ("Commit ") + About::commit);
+    CHECK (lines[2] == juce::String ("Commit ") + buildCommit);
     CHECK (lines[3] == "Undefined");
     CHECK (lines[4] == "Native UI");
 }

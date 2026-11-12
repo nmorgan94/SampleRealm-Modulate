@@ -10,8 +10,12 @@
   --color-dim: #666666;
   --color-fg: #ffffff;
 
-  /* For the shared header and overlays, as the native colour IDs in CustomLookAndFeel */
+  /* For the shared header, menu and overlays, as the native colour IDs and popup menu in CustomLookAndFeel */
   --color-header: transparent;
+  --color-menu: var(--color-widget);
+  --color-menu-header: var(--color-accent);
+  --color-menu-highlight: color-mix(in oklab, var(--color-accent) 20%, transparent);
+  --color-menu-highlight-text: var(--color-accent);
   --color-overlay-dim: color-mix(in oklab, var(--color-background) 60%, transparent);
   --color-overlay-panel: var(--color-panel);
   --color-overlay-outline: var(--color-accent);

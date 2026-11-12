@@ -1,7 +1,7 @@
 // Mirrors Source/ui/MasterMeter.h
 import type { ModulateBackend } from './backend.ts';
 import { Knob, PanelBox, type Rect } from './controls.tsx';
-import { LevelMeter, PREFERRED_WIDTH } from './LevelMeter.tsx';
+import { LevelMeter, PREFERRED_WIDTH } from '@samplerealm/modules/editor/LevelMeter.tsx';
 
 export function MasterMeter({ backend, bounds }: { backend: ModulateBackend; bounds: Rect }) {
   return (

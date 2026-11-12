@@ -1,7 +1,7 @@
 // Mirrors Source/ui/NoisePanel.h
 import type { ModulateBackend } from './backend.ts';
 import { ChoiceBox, Knob, Label, PanelBox, Toggle, type Rect } from './controls.tsx';
-import { useParam } from './hooks.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
 
 export function NoisePanel({ backend, bounds }: { backend: ModulateBackend; bounds: Rect }) {
   const enabled = useParam(backend, 'noise_enable').value >= 0.5;

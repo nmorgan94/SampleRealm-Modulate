@@ -1,6 +1,6 @@
 // Mirrors Source/dsp/Modulation.h, and the modulated value of ModulateSynth
 import type { Live, Modulation, ParamInfo } from './backend.ts';
-import { clamp01, rangeFromProportion, toProportion } from './params.ts';
+import { clamp01, rangeFromProportion, toProportion } from '@samplerealm/modules/editor/params.ts';
 
 
 export const modulatedProportion = ({ min, max }: Modulation, sourceValue: number) => clamp01(min + sourceValue * (max - min));

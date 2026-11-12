@@ -15,7 +15,7 @@ class ModulateProcessor extends AudioWorkletProcessor {
       const instance = new WebAssembly.Instance(new WebAssembly.Module(wasm), new Proxy({}, { get: () => stub }));
       this.engine = instance.exports;
       this.engine._initialize?.();
-      this.engine.prepare(sampleRate);
+      this.engine.prepare(sampleRate, 2);
     } catch (error) {
       this.engine = null;
       this.port.postMessage({ type: 'error', message: String(error) });
@@ -96,4 +96,5 @@ class ModulateProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('modulate-processor', ModulateProcessor);
+// As startWorklet in @samplerealm/modules/demo/engine.ts names it
+registerProcessor('engine-processor', ModulateProcessor);

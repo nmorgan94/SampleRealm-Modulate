@@ -98,7 +98,7 @@ settings. Run them with the `unit` workflow, or `test` to include pluginval (see
 - `ParameterSnapshotTests.cpp` and `fixtures/session-0.0.1.xml` hold what saved sessions depend on.
   Once a version ships, they don't change.
 - `fixtures/golden.json` holds renders of eleven patches, including every filter mode and slope with
-  and without drive, which `wasm/engine.test.mjs` checks too.
+  and without drive, which `webui/test/engine.test.ts` checks too.
   Re-record them only for an intended change of sound: `build-debug/Modulate_Tests "[.write-golden]"`.
 
 ## Validating the Plugin
@@ -127,15 +127,16 @@ Needs Emscripten (`brew install emscripten`) and Node 24+.
 
 | Task | Command |
 |---|---|
-| Build and test the demo | `cd wasm && cmake --workflow --preset wasm` |
+| Build and test the demo (engine and UI tests) | `cd wasm && cmake --workflow --preset wasm` |
 | Serve the demo with live reload at http://localhost:8099 | `cd webui && npm run serve` |
+| Typecheck and test the UI on their own | `cd webui && npm run typecheck && npm test` |
 | Build the plugin with the WebView editor | `cmake --workflow --preset webview` |
 
 - `Source/dsp/` and `Source/shared/` build for wasm: `juce_core`, `juce_audio_basics` and `juce_dsp` only.
 - Upload `wasm/build-wasm/SampleRealm-Modulate-<version>/` to the asset bucket's `demos/`.
   [`wasm.yml`](.github/workflows/wasm.yml) builds the same folder on GitHub as an artifact of that name.
 - The `webview` build installs over the native one; run the `release` workflow to switch back.
-- Delete `wasm/patches/juce-wasm.patch` once JUCE fixes its wasm support.
+- The wasm build patches JUCE (`cmake/patches/juce-wasm.patch` in SampleRealm-Modules) until JUCE fixes its wasm support.
 
 ## CI
 

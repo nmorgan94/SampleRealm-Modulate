@@ -8,7 +8,7 @@ using namespace TestHelpers;
 
 namespace
 {
-    // Shared with wasm/engine.test.mjs, which checks the engine against the same fingerprints
+    // Shared with webui/test/engine.test.ts, which checks the engine against the same fingerprints
     const auto goldenFile = juce::File (__FILE__).getSiblingFile ("fixtures/golden.json");
 
     using Fingerprint = std::vector<std::array<float, 4>>;

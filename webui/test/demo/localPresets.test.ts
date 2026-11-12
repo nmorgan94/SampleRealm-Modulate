@@ -1,6 +1,9 @@
+// Modulate's preset state in the demo. The shared rules are SampleRealm-Modules' Tests/web/localPresets.test.ts
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parsePreset, STORAGE_KEY, type PresetStorage } from '../../src/demo/localPresets.ts';
+import { parsePreset } from '@samplerealm/modules/demo/localPresets.ts';
+import { memoryStorage, presetXml } from '@samplerealm/modules/testing/presets.ts';
+import { parsePresetState, STORAGE_KEY } from '../../src/demo/presetState.ts';
 import { workletBackend } from '../../src/demo/workletBackend.ts';
 import { info } from '../engine.ts';
 
@@ -22,19 +25,14 @@ const factory = [
     </LFOCurves>
   </Parameters>
 </PRESET>`,
-  '<PRESET name="Sub" category="Bass"><Parameters><PARAM id="filter_cutoff" value="150"/></Parameters></PRESET>',
-  '<PRESET name="Bright" category="Lead"><Parameters><PARAM id="filter_cutoff" value="8000"/></Parameters></PRESET>',
-].map(parsePreset);
+  presetXml('Sub', 'Bass', { filter_cutoff: 150 }),
+  presetXml('Bright', 'Lead', { filter_cutoff: 8000 }),
+];
 
 const FACTORY_NAMES = ['Sub', 'Wobble', 'Bright'];
 
-const fakeStorage = (): PresetStorage & { items: Map<string, string> } => {
-  const items = new Map<string, string>();
-  return { items, getItem: (key) => items.get(key) ?? null, setItem: (key, value) => void items.set(key, value) };
-};
-
-const setUp = (storage = fakeStorage()) => {
-  const backend = workletBackend(info, factory, storage);
+const setUp = (storage = memoryStorage()) => {
+  const backend = workletBackend(info, { factoryPresets: factory, storage });
   return { backend, presets: backend.presets, storage, cutoff: () => backend.getValue('filter_cutoff') };
 };
 
@@ -45,7 +43,7 @@ const named = <T extends { name: string }>(list: T[], name: string) => {
 };
 
 test('factory files are read with their category, values, modulation and curves', () => {
-  assert.deepEqual(named(factory, 'Wobble'), {
+  assert.deepEqual(parsePreset(factory[0]!, parsePresetState), {
     name: 'Wobble',
     category: 'Bass',
     isFactory: true,
@@ -53,15 +51,6 @@ test('factory files are read with their category, values, modulation and curves'
     modulation: { filter_cutoff: { source: 'lfo', index: 2, min: 0.2, max: 0.8 } },
     curves: [[], [], [{ x: 0, y: 0 }, { x: 0.5, y: 1 }, { x: 1, y: 0 }], []],
   });
-});
-
-test('names keep the characters XmlElement writes by number', () => {
-  assert.equal(parsePreset('<PRESET name="Caf&#233; &amp; Bar" category="Keys"/>').name, 'Café & Bar');
-});
-
-test('factory presets are listed by category, then name', async () => {
-  const { presets } = setUp();
-  assert.deepEqual((await presets.list()).map((preset) => preset.name), FACTORY_NAMES);
 });
 
 test('a loaded preset sets its values, modulation and curves, and shows its name', async () => {
@@ -83,23 +72,6 @@ test('a preset without modulation or curves clears them', async () => {
 
   assert.equal(backend.getModulation('filter_cutoff'), null);
   assert.deepEqual(backend.getCurve(2), []);
-});
-
-test('moving a parameter marks the preset modified until the next load', async () => {
-  const { backend, presets, cutoff } = setUp();
-  const bright = named(await presets.list(), 'Bright');
-  await presets.load(bright);
-
-  const seen: boolean[] = [];
-  presets.onStatus((status) => seen.push(status.modified));
-
-  backend.setValue('filter_cutoff', 1000);
-  assert.equal(presets.status().modified, true);
-
-  await presets.load(bright);
-  assert.equal(presets.status().modified, false);
-  assert.equal(cutoff(), 8000);
-  assert.deepEqual(seen, [true, false]);
 });
 
 test('changing modulation or a curve marks the preset modified', async () => {
@@ -128,34 +100,13 @@ test('Init restores the defaults and clears modulation and curves', async () => 
   assert.deepEqual(presets.status(), { current: { name: 'Init', category: '', isFactory: true }, modified: false });
 });
 
-test('next and previous wrap, and start from either end after Init', async () => {
-  const { presets, cutoff } = setUp();
-  const name = () => presets.status().current.name;
-
-  await presets.loadNext();
-  assert.equal(name(), FACTORY_NAMES[0]);
-
-  await presets.loadPrevious();
-  assert.equal(name(), FACTORY_NAMES.at(-1));
-
-  await presets.loadNext();
-  assert.equal(name(), FACTORY_NAMES[0]);
-
-  await presets.loadInit();
-  await presets.loadPrevious();
-  assert.equal(name(), FACTORY_NAMES.at(-1));
-  assert.equal(cutoff(), 8000);
-});
-
-test('user presets save, rename and delete, and outlast the page', async () => {
+test('user presets keep their values, modulation and curves past the page', async () => {
   const { backend, presets, storage } = setUp();
   backend.setValue('filter_cutoff', 3000);
   backend.setModulation('osc1_morph', { source: 'lfo', index: 1, min: 0.2, max: 0.7 });
   backend.setCurve(1, [{ x: 0, y: 0.3 }, { x: 1, y: 0.3 }]);
 
   assert.equal(await presets.save('Mine', 'Lead'), null);
-  assert.deepEqual(presets.status(), { current: { name: 'Mine', category: 'Lead', isFactory: false }, modified: false });
-  assert.equal(await presets.exists('mine'), true);
   assert.deepEqual((await presets.list()).map((preset) => preset.name), [...FACTORY_NAMES, 'Mine']);
 
   // A new page reads it back
@@ -164,97 +115,42 @@ test('user presets save, rename and delete, and outlast the page', async () => {
   assert.equal(reopened.cutoff(), 3000);
   assert.deepEqual(reopened.backend.getModulation('osc1_morph'), { source: 'lfo', index: 1, min: 0.2, max: 0.7 });
   assert.deepEqual(reopened.backend.getCurve(1), [{ x: 0, y: 0.3 }, { x: 1, y: 0.3 }]);
-
-  assert.equal(await presets.rename(named(await presets.list(), 'Mine'), 'Yours'), null);
-  assert.equal(presets.status().current.name, 'Yours');
-  assert.deepEqual((await presets.list()).filter((preset) => !preset.isFactory).map((preset) => preset.name), ['Yours']);
-
-  assert.equal(await presets.remove(named(await presets.list(), 'Yours')), null);
-  assert.equal(await presets.exists('Yours'), false);
-  assert.equal(presets.status().modified, true);
-  assert.equal(storage.items.get(STORAGE_KEY), '[]');
 });
 
-test("the current preset is reported while it's listed", async () => {
-  const { presets } = setUp();
-  assert.equal(await presets.current(), null);
+test('an LFO with no points keeps the next LFO its own curve', () => {
+  const xml = `<PRESET name="Empty" category="Bass"><Parameters>
+    <LFOCurves>
+      <LFOCurve index="0"/>
+      <LFOCurve index="1"><Point x="0.0" y="0.2"/><Point x="1.0" y="0.8"/></LFOCurve>
+    </LFOCurves>
+  </Parameters></PRESET>`;
 
-  await presets.save('Mine', 'Lead');
-  assert.deepEqual(await presets.current(), named(await presets.list(), 'Mine'));
-
-  await presets.remove(named(await presets.list(), 'Mine'));
-  assert.equal(await presets.current(), null);
+  assert.deepEqual(parsePresetState(xml).curves, [[], [{ x: 0, y: 0.2 }, { x: 1, y: 0.8 }], [], []]);
 });
 
-test("user presets can't take a factory name", async () => {
-  const { presets } = setUp();
+test('a value that is missing or not a number loads at its default', () => {
+  const xml = '<PRESET name="Bad"><Parameters><PARAM id="filter_cutoff"/><PARAM id="osc1_gain" value=""/><PARAM id="osc2_gain" value="loud"/></Parameters></PRESET>';
 
-  assert.match((await presets.save('wobble', '')) ?? '', /factory preset/);
-  assert.equal(await presets.save('   ', ''), 'Enter a preset name.');
-  assert.equal(await presets.exists('wobble'), false);
-
-  assert.equal(await presets.save('Mine', ''), null);
-  assert.match((await presets.rename(named(await presets.list(), 'Mine'), 'Sub')) ?? '', /factory preset/);
-  assert.equal(await presets.exists('Mine'), true);
+  assert.deepEqual(parsePresetState(xml).params, {});
 });
 
-test("a stored preset loads past ids this engine doesn't have", async () => {
-  const storage = fakeStorage();
-  storage.setItem(STORAGE_KEY, JSON.stringify([{ name: 'Other', category: '', params: { gone: 1, filter_cutoff: 900 }, modulation: {}, curves: [] }]));
-  const { presets, cutoff } = setUp(storage);
+test('a stored preset loads its values, modulation and curves, skipping ids this engine lacks', async () => {
+  const storage = memoryStorage({
+    [STORAGE_KEY]: JSON.stringify([{
+      name: 'Old',
+      category: 'Lead',
+      params: { gone: 1, filter_cutoff: 900 },
+      modulation: { osc1_morph: { source: 'env', index: 0, min: 0.1, max: 0.5 } },
+      curves: [[{ x: 0, y: 1 }, { x: 1, y: 0 }]],
+    }]),
+  });
+  const { backend, presets, cutoff } = setUp(storage);
 
-  await presets.load(named(await presets.list(), 'Other'));
+  await presets.load(named(await presets.list(), 'Old'));
 
+  // An id this engine doesn't have is skipped, as the APVTS skips it
   assert.equal(cutoff(), 900);
-  assert.equal(presets.status().current.name, 'Other');
-});
-
-test('next and previous skip a user preset deleted in another tab', async () => {
-  const { presets, storage } = setUp();
-  await presets.save('A', '');
-  await presets.save('B', '');
-  await presets.load(named(await presets.list(), 'A'));
-
-  const otherTab = setUp(storage).presets;
-  assert.equal(await otherTab.remove(named(await otherTab.list(), 'B')), null);
-
-  await presets.loadNext();
-  assert.equal(presets.status().current.name, FACTORY_NAMES[0]);
-});
-
-test('saving, renaming and deleting keep what another tab saved', async () => {
-  const { presets, storage } = setUp();
-  await presets.save('Mine', '');
-
-  const otherTab = setUp(storage).presets;
-  assert.equal(await otherTab.save('Theirs', ''), null);
-
-  const users = () => JSON.parse(storage.items.get(STORAGE_KEY)!).map((stored: { name: string }) => stored.name);
-
-  assert.equal(await presets.save('Mine', ''), null);
-  assert.deepEqual(users(), ['Mine', 'Theirs']);
-
-  assert.equal(await presets.rename({ name: 'Mine', category: '', isFactory: false }, 'Ours'), null);
-  assert.deepEqual(users(), ['Ours', 'Theirs']);
-
-  assert.equal(await presets.remove({ name: 'Ours', category: '', isFactory: false }), null);
-  assert.deepEqual(users(), ['Theirs']);
-});
-
-test('without storage, user presets last until the page closes', async () => {
-  const refusing: PresetStorage = { getItem: () => null, setItem: () => { throw new Error('Refused'); } };
-
-  for (const storage of [refusing, undefined]) {
-    const { presets } = workletBackend(info, factory, storage);
-    assert.equal(await presets.save('Mine', ''), null);
-    assert.equal(await presets.exists('Mine'), true);
-    assert.deepEqual(await presets.current(), named(await presets.list(), 'Mine'));
-  }
-});
-
-test('unreadable storage leaves only the factory presets', async () => {
-  const storage = fakeStorage();
-  storage.setItem(STORAGE_KEY, 'not json');
-  const { presets } = setUp(storage);
-  assert.deepEqual((await presets.list()).map((preset) => preset.name), FACTORY_NAMES);
+  assert.deepEqual(backend.getModulation('osc1_morph'), { source: 'env', index: 0, min: 0.1, max: 0.5 });
+  assert.deepEqual(backend.getCurve(0), [{ x: 0, y: 1 }, { x: 1, y: 0 }]);
+  assert.deepEqual(presets.status(), { current: { name: 'Old', category: 'Lead', isFactory: false }, modified: false });
 });

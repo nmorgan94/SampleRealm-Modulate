@@ -5,7 +5,7 @@
 #include "EnvelopeEditor.h"
 #include "CustomLFOTabButton.h"
 #include "CustomLookAndFeel.h"
-#include "LabeledSlider.h"
+#include "LabeledKnob.h"
 
 class AudioPluginAudioProcessor;
 
@@ -81,14 +81,14 @@ public:
         for (auto* knob : knobs())
         {
             bounds.removeFromLeft(spacing);
-            knob->setBounds(bounds.removeFromLeft(knobSize).withHeight(LabeledSlider<>::labelHeight + knobSize));
+            knob->setBounds(bounds.removeFromLeft(knobSize).withHeight(LabeledKnob<>::labelHeight + knobSize));
         }
     }
 
 private:
-    std::array<LabeledSlider<>*, 4> knobs() { return { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob }; }
+    std::array<LabeledKnob<>*, 4> knobs() { return { &attackKnob, &decayKnob, &sustainKnob, &releaseKnob }; }
 
-    void setupKnob(LabeledSlider<>& knob, const juce::String& labelText, const juce::String& paramID)
+    void setupKnob(LabeledKnob<>& knob, const juce::String& labelText, const juce::String& paramID)
     {
         knob.setLabelText(labelText);
         knob.setLabelColour(juce::Colour(0xff00ff41));
@@ -117,7 +117,7 @@ private:
     
     std::unique_ptr<EnvelopeEditor> envelopeEditor;
     
-    LabeledSlider<> attackKnob, decayKnob, sustainKnob, releaseKnob;
+    LabeledKnob<> attackKnob, decayKnob, sustainKnob, releaseKnob;
     
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> sliderAttachments;
     

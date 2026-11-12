@@ -6,7 +6,7 @@
 #include "CustomLFOTabButton.h"
 #include "CustomLookAndFeel.h"
 #include "ModulatableSlider.h"
-#include "LabeledSlider.h"
+#include "LabeledKnob.h"
 #include "ComboChoices.h"
 #include "../shared/ParameterSpecs.h"
 
@@ -190,23 +190,23 @@ public:
             int knobSize = 50;
             int knobX = controlsArea.getX() + 10;
             int knobY = controlsArea.getY() + 5;
-            int labelY = knobY - LabeledSlider<>::labelHeight;
+            int labelY = knobY - LabeledKnob<>::labelHeight;
 
-            rateKnobs[i]->setBounds(knobX, labelY, knobSize, LabeledSlider<>::labelHeight + knobSize);
+            rateKnobs[i]->setBounds(knobX, labelY, knobSize, LabeledKnob<>::labelHeight + knobSize);
             
             int syncButtonWidth = 35;
             int syncButtonHeight = 12;
             syncButtons[i]->setBounds(knobX + knobSize + 10, knobY + 5, syncButtonWidth, syncButtonHeight);
             
             int tensionX = knobX + knobSize + 55;
-            tensionKnobs[i]->setBounds(tensionX, labelY, knobSize, LabeledSlider<>::labelHeight + knobSize);
+            tensionKnobs[i]->setBounds(tensionX, labelY, knobSize, LabeledKnob<>::labelHeight + knobSize);
         }
     }
     
 private:
     void createTensionControl(juce::Component* container, size_t lfoIndex)
     {
-        auto& knob = *tensionKnobs.emplace_back(std::make_unique<LabeledSlider<>>());
+        auto& knob = *tensionKnobs.emplace_back(std::make_unique<LabeledKnob<>>());
         addKnob(container, knob, "Tension");
 
         knob.getSlider().onValueChange = [this, lfoIndex, &slider = knob.getSlider()]()
@@ -224,7 +224,7 @@ private:
     void createRateControl(juce::Component* container, size_t lfoIndex)
     {
         const auto& spec = ParameterSpecs::lfo[lfoIndex].rate;
-        auto& knob = *rateKnobs.emplace_back(std::make_unique<LabeledSlider<ModulatableSlider>>(processor, spec.id));
+        auto& knob = *rateKnobs.emplace_back(std::make_unique<LabeledKnob<ModulatableSlider>>(processor, spec.id));
         addKnob(container, knob, "Rate");
         rateAttachments.push_back(std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             apvts, spec.id, knob.getSlider()));
@@ -281,11 +281,11 @@ private:
     std::vector<std::unique_ptr<juce::ComboBox>> shapeComboBoxes;
     std::vector<std::unique_ptr<juce::Label>> modeLabels;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment>> modeAttachments;
-    std::vector<std::unique_ptr<LabeledSlider<ModulatableSlider>>> rateKnobs;
+    std::vector<std::unique_ptr<LabeledKnob<ModulatableSlider>>> rateKnobs;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> rateAttachments;
     std::vector<std::unique_ptr<juce::ToggleButton>> syncButtons;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>> syncAttachments;
-    std::vector<std::unique_ptr<LabeledSlider<>>> tensionKnobs;
+    std::vector<std::unique_ptr<LabeledKnob<>>> tensionKnobs;
     std::vector<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>> tensionAttachments;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LFOPanel)

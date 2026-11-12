@@ -1,12 +1,12 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <samplerealm/PeakMeter.h>
 #include "dsp/ModulateSynth.h"
-#include "dsp/PeakMeter.h"
 #include "ModulationManager.h"
 #include "Parameters.h"
 #include "LFOCurveState.h"
-#include "presets/PresetManager.h"
+#include <editor/editor.h>
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor,
@@ -88,7 +88,7 @@ private:
     static inline const juce::Identifier lfoCurvesStateID { "LFOCurves" };
     //==============================================================================
     juce::AudioProcessorValueTreeState apvts { *this, nullptr, "Parameters",
-                                               Parameters::createLayout() };
+                                               createParameterLayout (ParameterSpecs::all, Parameters::versionHint) };
     juce::UndoManager undoManager;
     ModulationManager modulationManager;
     LFOCurveState lfoCurveState;

@@ -1,6 +1,6 @@
 // Mirrors Source/dsp/LfoCurve.h
 import type { Point } from './backend.ts';
-import { clamp01 } from './params.ts';
+import { clamp01 } from '@samplerealm/modules/editor/params.ts';
 
 export const DEFAULT_POINTS: readonly Point[] = [
   { x: 0, y: 0.5 },

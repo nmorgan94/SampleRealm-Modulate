@@ -5,7 +5,7 @@
 #include <atomic>
 #include <vector>
 #include "../shared/ParameterSpecs.h"
-#include "../shared/Transport.h"
+#include <samplerealm/Transport.h>
 #include "ADSREnvelope.h"
 #include "Drive.h"
 #include "Filter.h"

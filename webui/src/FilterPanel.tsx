@@ -2,11 +2,12 @@
 import type { ModulateBackend } from './backend.ts';
 import { at, ChoiceBox, Knob, Label, PanelBox, PillToggle, Toggle, type Rect } from './controls.tsx';
 import { FilterMode, filterMagnitude } from './filterResponse.ts';
-import { juceHeight } from './fonts.ts';
-import { useLive, useModulation, useParam } from './hooks.ts';
+import { juceHeight } from '@samplerealm/modules/editor/fonts.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
+import { clamp01 } from '@samplerealm/modules/editor/params.ts';
+import { useLive, useModulation } from './hooks.ts';
 import { LABEL_HEIGHT } from './layout.ts';
 import { modulatedValue, sourceValue } from './modulation.ts';
-import { clamp01 } from './params.ts';
 
 // Only the curve's shape, so any rate will do
 const DISPLAY_SAMPLE_RATE = 48000;

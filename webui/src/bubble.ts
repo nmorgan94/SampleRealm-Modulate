@@ -1,5 +1,6 @@
 // juce::BubbleComponent::setPosition, for a slider's value popup within the editor
-import { EDITOR_HEIGHT, EDITOR_WIDTH, type Rect } from './editorRoot.ts';
+import type { Rect } from '@samplerealm/modules/editor/layout.ts';
+import { EDITOR_HEIGHT, EDITOR_WIDTH } from './layout.ts';
 
 const ARROW = 10;
 

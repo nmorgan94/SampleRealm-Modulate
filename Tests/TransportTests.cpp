@@ -7,49 +7,6 @@
 
 using Catch::Matchers::WithinAbs;
 
-namespace
-{
-    struct FakePlayHead final : juce::AudioPlayHead
-    {
-        juce::Optional<PositionInfo> getPosition() const override { return position; }
-
-        juce::Optional<PositionInfo> position;
-    };
-}
-
-TEST_CASE ("A transport has its defaults where the host says nothing", "[transport]")
-{
-    const auto check = [] (juce::AudioPlayHead* host)
-    {
-        const auto transport = Transport::from (host);
-        CHECK_THAT (transport.bpm, WithinAbs (Transport{}.bpm, 0.0));
-        CHECK_FALSE (transport.playing);
-    };
-
-    FakePlayHead playHead;
-    check (nullptr);
-    check (&playHead);
-}
-
-TEST_CASE ("A host playing with no position counts as stopped", "[transport]")
-{
-    juce::AudioPlayHead::PositionInfo position;
-    position.setBpm (90.0);
-    position.setIsPlaying (true);
-
-    FakePlayHead playHead;
-    playHead.position = position;
-    const auto withoutPosition = Transport::from (&playHead);
-    CHECK_THAT (withoutPosition.bpm, WithinAbs (90.0, 0.0));
-    CHECK_FALSE (withoutPosition.playing);
-
-    position.setPpqPosition (8.5);
-    playHead.position = position;
-    const auto withPosition = Transport::from (&playHead);
-    CHECK (withPosition.playing);
-    CHECK_THAT (withPosition.ppq, WithinAbs (8.5, 0.0));
-}
-
 TEST_CASE ("A synced LFO in Sync mode is at the host's position for the block", "[dsp][lfo][transport]")
 {
     constexpr int blockSize = 512;

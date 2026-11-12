@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { decimalPlaces, formatValue, fromProportion, parseValue, toProportion } from '../src/params.ts';
+import { formatValue, fromProportion, toProportion } from '@samplerealm/modules/editor/params.ts';
+import { parseKnobValue } from '../src/params.ts';
 import { info, param } from './engine.ts';
 
 // From the Catch2 snapshot in Tests/ParameterSnapshotTests.cpp
@@ -299,19 +300,15 @@ test('positions past either end clamp to the range', () => {
   assert.equal(fromProportion(drive, -0.5), 0);
 });
 
-test('decimal places follow the step, as AudioParameterFloat counts them', () => {
-  assert.deepEqual([0.001, 0.1, 0.01, 1].map(decimalPlaces), [3, 1, 2, 0]);
-});
-
 test('typed text parses and snaps, and text without a number is ignored', () => {
-  assert.equal(parseValue(param('env1_release'), '0.5'), 0.5);
-  assert.equal(parseValue(param('env1_release'), '99'), 5);
-  assert.equal(parseValue(param('master_gain'), '-3.14'), -3.1);
-  assert.equal(parseValue(param('env1_release'), 'slow'), null);
+  assert.equal(parseKnobValue(param('env1_release'), '0.5'), 0.5);
+  assert.equal(parseKnobValue(param('env1_release'), '99'), 5);
+  assert.equal(parseKnobValue(param('master_gain'), '-3.14'), -3.1);
+  assert.equal(parseKnobValue(param('env1_release'), 'slow'), null);
 });
 
-test('a choice takes only its names as typed text, whatever their case', () => {
-  assert.equal(parseValue(param('lfo1_sync_rate'), '1/4'), 6);
-  assert.equal(parseValue(param('lfo1_sync_rate'), ' 2 bars '), 13);
-  assert.equal(parseValue(param('lfo1_sync_rate'), '2'), null);
+test('a choice knob takes only its names as typed text, whatever their case', () => {
+  assert.equal(parseKnobValue(param('lfo1_sync_rate'), '1/4'), 6);
+  assert.equal(parseKnobValue(param('lfo1_sync_rate'), ' 2 bars '), 13);
+  assert.equal(parseKnobValue(param('lfo1_sync_rate'), '2'), null);
 });

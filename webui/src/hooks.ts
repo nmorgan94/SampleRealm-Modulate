@@ -1,33 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Live, ModulateBackend, Modulation, Point } from './backend.ts';
-
-export function useParam(backend: ModulateBackend, id: string) {
-  const [value, setLocal] = useState(() => backend.getValue(id));
-
-  useEffect(() => {
-    setLocal(backend.getValue(id));
-    return backend.subscribe(id, setLocal);
-  }, [backend, id]);
-
-  const set = useCallback(
-    (next: number) => {
-      setLocal(next);
-      backend.setValue(id, next);
-    },
-    [backend, id]
-  );
-
-  const commit = useCallback(
-    (next: number) => {
-      backend.beginGesture(id);
-      set(next);
-      backend.endGesture(id);
-    },
-    [backend, id, set]
-  );
-
-  return { value, set, commit, param: backend.param(id) };
-}
 
 export function useModulation(backend: ModulateBackend, id: string): Modulation | null {
   const [modulation, setModulation] = useState(() => backend.getModulation(id));

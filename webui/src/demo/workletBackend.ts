@@ -1,3 +1,6 @@
+// Modulate's own: the shared one carries no modulation, curves or live state
+import { browserStorage, localPresets, type PresetStorage } from '@samplerealm/modules/demo/localPresets.ts';
+import type { EnginePort } from '@samplerealm/modules/demo/workletBackend.ts';
 import {
   listenerSet,
   MAX_CURVE_POINTS,
@@ -11,47 +14,11 @@ import {
   type Point,
   type UiInfo,
 } from '../backend.ts';
-import { localPresets, type PresetStorage, type StoredPreset } from './localPresets.ts';
+import { INIT_STATE, parsePresetState, STORAGE_KEY } from './presetState.ts';
 
 const NOTE_ON = 0x90;
 const NOTE_OFF = 0x80;
 const VELOCITY = 100;
-
-// WASI imports are never called
-export const stubImports = () => {
-  const stub = new Proxy({}, { get: () => () => 0 });
-  return new Proxy({}, { get: () => stub }) as WebAssembly.Imports;
-};
-
-export type Engine = Record<string, CallableFunction> & { memory: WebAssembly.Memory };
-
-export const readUiInfo = (engine: Engine) => {
-  const bytes = new Uint8Array(engine.memory.buffer, engine.uiInfo());
-  return JSON.parse(new TextDecoder().decode(bytes.subarray(0, bytes.indexOf(0)))) as UiInfo;
-};
-
-export async function loadEngine(url: string): Promise<{ wasm: ArrayBuffer; info: UiInfo }> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${url}: ${response.status}`);
-
-  const wasm = await response.arrayBuffer();
-  const { instance } = await WebAssembly.instantiate(wasm, stubImports());
-  const engine = instance.exports as Engine;
-  engine._initialize?.();
-  return { wasm, info: readUiInfo(engine) };
-}
-
-// The node's port, so tests can stand in for it
-export type EnginePort = Pick<MessagePort, 'postMessage'> & { onmessage: ((e: MessageEvent) => void) | null };
-
-// Storage can be missing or throw, e.g. in a private window
-export const browserStorage = (): PresetStorage | undefined => {
-  try {
-    return globalThis.localStorage;
-  } catch {
-    return undefined;
-  }
-};
 
 export type WorkletBackend = ModulateBackend & {
   noteOn(note: number): void;
@@ -60,7 +27,14 @@ export type WorkletBackend = ModulateBackend & {
   attach(port: EnginePort): void;
 };
 
-export function workletBackend(info: UiInfo, factoryPresets: StoredPreset[] = [], storage?: PresetStorage): WorkletBackend {
+interface Options {
+  // The factory preset files' text
+  factoryPresets?: string[];
+  // The page's own unless given
+  storage?: PresetStorage;
+}
+
+export function workletBackend(info: UiInfo, { factoryPresets = [], storage = browserStorage() }: Options = {}): WorkletBackend {
   const entry = paramLookup(new Map(info.params.map((param, index) => [param.id, { param, index, value: param.defaultValue }])));
   const listeners = new Map<string, Set<(value: number) => void>>();
   const modulations = new Map<string, Modulation>();
@@ -103,19 +77,22 @@ export function workletBackend(info: UiInfo, factoryPresets: StoredPreset[] = []
   };
 
   const presets = localPresets({
-    factory: factoryPresets,
+    storageKey: STORAGE_KEY,
     storage,
+    factory: factoryPresets,
+    parse: parsePresetState,
+    init: INIT_STATE,
     capture: () => ({
       params: Object.fromEntries(info.params.map(({ id }) => [id, entry(id).value])),
       modulation: Object.fromEntries(modulations),
       curves: curves.map((points) => points.map((point) => ({ ...point }))),
     }),
-    apply: (state) => {
+    apply: ({ params = {}, modulation = {}, curves: stored = [] }) => {
       // Ids this engine doesn't have are skipped, as the APVTS skips them
-      for (const { id, defaultValue } of info.params) applyValue(id, state.params[id] ?? defaultValue);
-      for (const { id } of info.params) storeModulation(id, state.modulation[id] ?? null);
+      for (const { id, defaultValue } of info.params) applyValue(id, params[id] ?? defaultValue);
+      for (const { id } of info.params) storeModulation(id, modulation[id] ?? null);
       modulationListeners.notify();
-      for (let lfo = 0; lfo < NUM_LFOS; lfo++) applyCurve(lfo, state.curves[lfo] ?? []);
+      for (let lfo = 0; lfo < NUM_LFOS; lfo++) applyCurve(lfo, stored[lfo] ?? []);
     },
   });
 

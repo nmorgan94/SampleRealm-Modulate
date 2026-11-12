@@ -1,8 +1,8 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <controls/controls.h>
 #include "../shared/ParameterSpecs.h"
-#include "LevelMeter.h"
 #include "RotarySlider.h"
 
 class MasterMeter : public juce::Component

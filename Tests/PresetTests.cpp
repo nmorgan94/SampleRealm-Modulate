@@ -43,18 +43,6 @@ namespace
         float cutoff()   { return getParameter (processor, "filter_cutoff"); }
     };
 
-    juce::StringArray namesOf (const juce::Array<PresetManager::Preset>& list)
-    {
-        juce::StringArray names;
-
-        for (const auto& preset : list)
-            names.add (preset.name);
-
-        return names;
-    }
-
-    const juce::StringArray factoryNames { "Sub", "Wobble", "Bright" };
-
     void assignCutoff (AudioPluginAudioProcessor& processor)
     {
         processor.getModulationManager().setAssignment ("filter_cutoff", { Modulation::Source::Envelope, 1, 0.1f, 0.9f });
@@ -62,12 +50,6 @@ namespace
 }
 
 //==============================================================================
-TEST_CASE_METHOD (PresetFixture, "Factory presets are listed by category, then name", "[presets]")
-{
-    CHECK (namesOf (presets.getFactoryPresets()) == factoryNames);
-    CHECK (namesOf (presets.getPresets()) == factoryNames);
-}
-
 // The processor's own manager, with Assets/Presets embedded
 TEST_CASE_METHOD (ProcessorFixture, "Every file in Assets/Presets is a factory preset that loads unmodified", "[presets]")
 {
@@ -115,29 +97,6 @@ TEST_CASE_METHOD (PresetFixture, "A preset without modulation or curves clears t
     CHECK (processor.getLFOCurvePoints (2).empty());
 }
 
-TEST_CASE_METHOD (PresetFixture, "Moving a parameter marks the preset modified until the next load", "[presets]")
-{
-    REQUIRE (presets.loadPreset (presets.find ("Bright", true).value()));
-
-    setParameter (processor, "filter_cutoff", 1000.0f);
-    CHECK (presets.isModified());
-
-    REQUIRE (presets.loadPreset (presets.find ("Bright", true).value()));
-    CHECK_FALSE (presets.isModified());
-    CHECK_THAT (cutoff(), WithinAbs (8000.0, 1.0e-1));
-}
-
-TEST_CASE_METHOD (PresetFixture, "Changing state outside the parameters marks the preset modified", "[presets]")
-{
-    REQUIRE (presets.loadPreset (presets.find ("Wobble", true).value()));
-
-    processor.updateHostDisplay (juce::AudioProcessor::ChangeDetails{}.withProgramChanged (true));
-    CHECK_FALSE (presets.isModified());
-
-    processor.updateHostDisplay (juce::AudioProcessor::ChangeDetails{}.withNonParameterStateChanged (true));
-    CHECK (presets.isModified());
-}
-
 // The processor's own manager, which hears about modulation and curves
 TEST_CASE_METHOD (ProcessorFixture, "Changing modulation or a curve marks the preset modified", "[presets]")
 {
@@ -183,49 +142,6 @@ TEST_CASE_METHOD (PresetFixture, "Replacing the state moves the editor's counter
     CHECK (processor.getStateChanges() != before);
 }
 
-TEST_CASE_METHOD (PresetFixture, "Next and previous wrap, and start from either end after Init", "[presets]")
-{
-    REQUIRE (presets.loadNext());
-    CHECK (presets.getCurrent().name == factoryNames[0]);
-
-    REQUIRE (presets.loadPrevious());
-    CHECK (presets.getCurrent().name == factoryNames[factoryNames.size() - 1]);
-
-    REQUIRE (presets.loadNext());
-    CHECK (presets.getCurrent().name == factoryNames[0]);
-
-    presets.loadInit();
-    REQUIRE (presets.loadPrevious());
-    CHECK (presets.getCurrent().name == factoryNames[factoryNames.size() - 1]);
-    CHECK_THAT (cutoff(), WithinAbs (8000.0, 1.0e-1));
-}
-
-TEST_CASE_METHOD (PresetFixture, "Next and previous step past a preset that won't load", "[presets]")
-{
-    REQUIRE (presets.saveUserPreset ("A", {}).wasOk());
-    REQUIRE (userDirectory.getChildFile ("Broken.modulate").replaceWithText ("not a preset"));
-
-    REQUIRE (presets.loadNext());
-    CHECK (presets.getCurrent().name == factoryNames[0]);
-
-    REQUIRE (presets.loadPrevious());
-    CHECK (presets.getCurrent().name == "A");
-}
-
-TEST_CASE_METHOD (PresetFixture, "Rescanning moves the change counter only when the folder changed", "[presets]")
-{
-    presets.refreshUserPresets();
-    const auto before = presets.getChangeCounter();
-
-    presets.refreshUserPresets();
-    CHECK (presets.getChangeCounter() == before);
-
-    REQUIRE (userDirectory.createDirectory().wasOk());
-    REQUIRE (userDirectory.getChildFile ("Mine.modulate").replaceWithText ("<PRESET/>"));
-    presets.refreshUserPresets();
-    CHECK (presets.getChangeCounter() != before);
-}
-
 TEST_CASE_METHOD (PresetFixture, "User presets save, rename and delete in their folder", "[presets]")
 {
     setParameter (processor, "filter_cutoff", 3000.0f);
@@ -257,30 +173,6 @@ TEST_CASE_METHOD (PresetFixture, "User presets save, rename and delete in their 
     REQUIRE (presets.deleteUserPreset (presets.getPresets().getLast()).wasOk());
     CHECK_FALSE (yours.exists());
     CHECK (presets.getUserPresets().isEmpty());
-    CHECK (presets.isModified());
-}
-
-TEST_CASE_METHOD (PresetFixture, "User presets can't take a factory name", "[presets]")
-{
-    CHECK (presets.saveUserPreset ("wobble", {}).failed());
-    CHECK (presets.saveUserPreset ("   ", {}).failed());
-    CHECK_FALSE (userDirectory.getChildFile ("wobble.modulate").exists());
-
-    REQUIRE (presets.saveUserPreset ("Mine", {}).wasOk());
-    CHECK (presets.renameUserPreset (presets.getUserPresets().getFirst(), "Sub").failed());
-    CHECK (userDirectory.getChildFile ("Mine.modulate").existsAsFile());
-}
-
-TEST_CASE_METHOD (PresetFixture, "State from before presets existed shows Init, modified", "[presets][state]")
-{
-    REQUIRE (presets.loadPreset (presets.find ("Bright", true).value()));
-
-    juce::ValueTree state (processor.getAPVTS().state.getType());
-    state.appendChild ({ "PARAM", { { "id", "filter_cutoff" }, { "value", 250.0f } } }, nullptr);
-    presets.restoreState (state);
-
-    CHECK_THAT (cutoff(), WithinAbs (250.0, 1.0e-2));
-    CHECK (presets.getCurrent().name == "Init");
     CHECK (presets.isModified());
 }
 

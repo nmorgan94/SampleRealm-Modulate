@@ -1,39 +1,11 @@
 #pragma once
 
-#include <algorithm>
-#include <array>
 #include <cmath>
-#include <span>
+#include <samplerealm/ParameterSpec.h>
 
 //==============================================================================
 namespace ParameterSpecs
 {
-    enum class Kind { real, integer, choice };
-
-    struct Spec
-    {
-        const char* id;
-        const char* name;
-        Kind kind;
-        float min, max, defaultValue;
-        float step = 0.0f;
-        float skew = 1.0f;
-        const char* unit = "";
-        std::span<const char* const> choices = {};
-    };
-
-    constexpr Spec integer (const char* id, const char* name, int min, int max, int defaultValue, const char* unit = "")
-    {
-        return { id, name, Kind::integer, static_cast<float> (min), static_cast<float> (max),
-                 static_cast<float> (defaultValue), 1.0f, 1.0f, unit };
-    }
-
-    constexpr Spec choice (const char* id, const char* name, std::span<const char* const> choices, int defaultValue)
-    {
-        return { id, name, Kind::choice, 0.0f, static_cast<float> (choices.size() - 1),
-                 static_cast<float> (defaultValue), 1.0f, 1.0f, "", choices };
-    }
-
     inline constexpr int maxVoices = 8;
     inline constexpr int maxUnison = 7;
 
@@ -207,15 +179,7 @@ namespace ParameterSpecs
         &env[3].attack, &env[3].decay, &env[3].sustain, &env[3].release, &env[3].attackCurve, &env[3].decayCurve, &env[3].releaseCurve
     };
 
-    static_assert (std::ranges::all_of (all, [] (const Spec* spec)
-    {
-        if (spec->kind == Kind::real)
-            return true;
-
-        return spec->step == 1.0f
-            && (spec->kind == Kind::integer
-                || (spec->min == 0.0f && static_cast<size_t> (spec->max) == spec->choices.size() - 1));
-    }), "Integer and choice specs need step 1, and a choice spec's range is 0 to its last choice");
+    static_assert (areValid (all));
 
     constexpr size_t indexOf (const Spec& spec)
     {
@@ -223,10 +187,13 @@ namespace ParameterSpecs
     }
 
     //==============================================================================
-    // The ranges JUCE gives AudioParameterFloat, Int and Choice, so the DSP sees the values the host does
+    // The ranges JUCE gives AudioParameterFloat, Int, Choice and Bool, so the DSP sees the values the host does
 
     inline float snapToLegalValue (const Spec& spec, float value)
     {
+        if (spec.kind == Kind::toggle)
+            return value >= 0.5f ? spec.max : spec.min; // as AudioParameterBool
+
         if (spec.kind != Kind::real)
             return std::nearbyint (std::clamp (value, spec.min, spec.max)); // roundToInt rounds halves to even
 
@@ -243,7 +210,8 @@ namespace ParameterSpecs
 
         switch (spec.kind)
         {
-            case Kind::integer: return std::clamp ((value - spec.min) / (spec.max - spec.min), 0.0f, 1.0f);
+            case Kind::integer:
+            case Kind::toggle:  return std::clamp ((value - spec.min) / (spec.max - spec.min), 0.0f, 1.0f);
             case Kind::choice:  return std::clamp (value / spec.max, 0.0f, 1.0f);
             case Kind::real:    break;
         }
@@ -259,7 +227,8 @@ namespace ParameterSpecs
 
         switch (spec.kind)
         {
-            case Kind::integer: return std::clamp (proportion * (spec.max - spec.min) + spec.min, spec.min, spec.max);
+            case Kind::integer:
+            case Kind::toggle:  return std::clamp (proportion * (spec.max - spec.min) + spec.min, spec.min, spec.max);
             case Kind::choice:  return std::clamp (proportion * spec.max, 0.0f, spec.max);
             case Kind::real:    break;
         }

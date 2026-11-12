@@ -1,5 +1,5 @@
 // Mirrors Source/dsp/EnvelopeCurve.h and the shape Source/ui/EnvelopeEditor.h draws
-import { clamp01 } from './params.ts';
+import { clamp01 } from '@samplerealm/modules/editor/params.ts';
 
 const SUSTAIN_DISPLAY_TIME = 0.3;
 const CURVE_PER_PIXEL = 1 / 120;

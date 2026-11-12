@@ -4,10 +4,10 @@ import { MAX_CURVE_POINTS, NUM_LFOS, type ModulateBackend, type Point } from './
 import { ChoiceBox, ComboBox, Knob, Label, PanelBox, PillToggle, SourceTabs, type Rect } from './controls.tsx';
 import { evaluate, pointsOrDefault, SHAPES } from './curves.ts';
 import { CurveBackground, ControlPoint, curvePath, PLAYHEAD_COLOUR } from './curveDisplay.tsx';
-import { pointIn } from './editorRoot.ts';
-import { useCurve, useLive, useParam } from './hooks.ts';
-import { LABEL_HEIGHT } from './layout.ts';
-import { clamp01 } from './params.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
+import { clamp01 } from '@samplerealm/modules/editor/params.ts';
+import { useCurve, useLive } from './hooks.ts';
+import { LABEL_HEIGHT, pointIn } from './layout.ts';
 
 const RESOLUTION = 200;
 const HIT_DISTANCE = 10;

@@ -3,12 +3,12 @@ import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } 
 import { EnvelopeStage, NUM_ENVELOPES, type ModulateBackend } from './backend.ts';
 import { Knob, PanelBox, SourceTabs, type Rect } from './controls.tsx';
 import { CurveBackground, ControlPoint, PLAYHEAD_COLOUR } from './curveDisplay.tsx';
-import { pointIn } from './editorRoot.ts';
+import { juceHeight } from '@samplerealm/modules/editor/fonts.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
+import { snap } from '@samplerealm/modules/editor/params.ts';
 import { draggedCurve, envelopeShape } from './envelope.ts';
-import { juceHeight } from './fonts.ts';
-import { LABEL_HEIGHT } from './layout.ts';
-import { useLive, useParam } from './hooks.ts';
-import { snap } from './params.ts';
+import { LABEL_HEIGHT, pointIn } from './layout.ts';
+import { useLive } from './hooks.ts';
 
 const STAGES = ['attack', 'decay', 'sustain', 'release'] as const;
 const STAGE_NAMES = ['Attack', 'Decay', 'Sustain', 'Release'];

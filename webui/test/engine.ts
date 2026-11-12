@@ -1,14 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { engineAt } from '@samplerealm/modules/testing/engine.ts';
 import { localEnginePath } from '../localEngine.ts';
 import { paramLookup } from '../src/backend.ts';
-import { readUiInfo, stubImports, type Engine } from '../src/demo/workletBackend.ts';
 
-const instance = new WebAssembly.Instance(new WebAssembly.Module(readFileSync(localEnginePath())), stubImports());
+// Makes a fresh engine from the last wasm build, stereo, prepared at `rate` or unprepared for null
+export const freshEngine = engineAt(localEnginePath());
 
-export const engine = instance.exports as Engine;
-engine._initialize?.();
-
-export const info = readUiInfo(engine);
+// One engine for the pure functions the web UI's ports are tested against
+export const { engine, info } = freshEngine();
 
 export const param = paramLookup(new Map(info.params.map((p) => [p.id, p])));
 

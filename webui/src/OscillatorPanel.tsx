@@ -2,7 +2,8 @@
 import { useMemo } from 'react';
 import type { ModulateBackend } from './backend.ts';
 import { at, ChoiceBox, Knob, Label, PanelBox, Stepper, Toggle, type Rect } from './controls.tsx';
-import { useLive, useModulation, useParam } from './hooks.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
+import { useLive, useModulation } from './hooks.ts';
 import { modulatedValue, sourceValue } from './modulation.ts';
 import { blend, generateWavetable } from './waveforms.ts';
 

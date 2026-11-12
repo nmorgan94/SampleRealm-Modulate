@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { qwertyLabel } from './qwerty.ts';
+import { qwertyLabel } from '@samplerealm/modules/demo/qwerty.ts';
 
 const BLACK_SEMITONES = new Set([1, 3, 6, 8, 10]);
 const isBlack = (note: number) => BLACK_SEMITONES.has(note % 12);

@@ -1,15 +1,19 @@
-// Mirrors Source/ui/CustomLookAndFeel.h, ModulatableSlider, LabeledSlider, RotarySlider, StepperDisplay and CustomLFOTabButton
+// Mirrors Source/ui/CustomLookAndFeel.h, ModulatableSlider, LabeledKnob, RotarySlider, StepperDisplay and CustomLFOTabButton
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { FittedText } from '@samplerealm/modules/editor/controls.tsx';
+import { areaInEditor, useEditorRoot } from '@samplerealm/modules/editor/editorRoot.ts';
+import { juceHeight } from '@samplerealm/modules/editor/fonts.ts';
+import { useParam } from '@samplerealm/modules/editor/hooks.ts';
+import type { Rect } from '@samplerealm/modules/editor/layout.ts';
+import { useMenu, type MenuItem } from '@samplerealm/modules/editor/Menu.tsx';
+import { formatValue, fromProportion, snap, toProportion } from '@samplerealm/modules/editor/params.ts';
 import type { ModulateBackend, Modulation, ModulationSource, ParamInfo } from './backend.ts';
 import { bubbleAt } from './bubble.ts';
-import { areaInEditor, pointIn, useEditorRoot, type Rect } from './editorRoot.ts';
-import { juceHeight } from './fonts.ts';
-import { useLive, useModulation, useParam } from './hooks.ts';
-import { useMenu, type MenuItem } from './Menu.tsx';
+import { useLive, useModulation } from './hooks.ts';
 import { applyDepthChange, modulatedValue, sourceValue } from './modulation.ts';
-import { layOutBelowLabel } from './layout.ts';
-import { formatValue, fromProportion, parseValue, snap, toProportion } from './params.ts';
+import { layOutBelowLabel, pointIn } from './layout.ts';
+import { parseKnobValue } from './params.ts';
 
 export type { Rect };
 
@@ -187,35 +191,12 @@ const rotaryValueAt = (e: ReactPointerEvent, start: DragStart, param: ParamInfo)
 };
 
 // A TextEditor's look
-export const INPUT_CLASS = 'border border-input-outline bg-input text-fg outline-none selection:bg-input-highlight focus:border-input-focus';
+const INPUT_CLASS = 'border border-input-outline bg-input text-fg outline-none selection:bg-input-highlight focus:border-input-focus';
 
 const LABEL_STYLE: CSSProperties = { fontSize: juceHeight(15), lineHeight: 1 };
 
 // A Label's border, inside which its text fits
 const LABEL_INSET = 5;
-const MIN_SQUEEZE = 0.7;
-
-// As drawFittedText: squeezed to fit, as far as 70% wide, then smaller
-export function FittedText({ text, width }: { text: string; width: number }) {
-  const span = useRef<HTMLSpanElement>(null);
-  const [fit, setFit] = useState({ squeeze: 1, shrink: 1 });
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const natural = span.current?.scrollWidth ?? 0;
-      const scale = natural > width ? width / natural : 1;
-      setFit({ squeeze: Math.max(MIN_SQUEEZE, scale), shrink: Math.min(1, scale / MIN_SQUEEZE) });
-    };
-    measure();
-    document.fonts?.ready.then(measure);
-  }, [text, width]);
-
-  return (
-    <span ref={span} className="inline-block whitespace-nowrap" style={{ transform: `scaleX(${fit.squeeze})`, fontSize: fit.shrink === 1 ? undefined : `${fit.shrink}em` }}>
-      {text}
-    </span>
-  );
-}
 
 function Bubble({ target, text }: { target: RefObject<HTMLElement | null>; text: string }) {
   const root = useEditorRoot();
@@ -240,7 +221,7 @@ function Bubble({ target, text }: { target: RefObject<HTMLElement | null>; text:
   );
 }
 
-// LabeledSlider's
+// LabeledKnob's
 const NAME_DELAY_MS = 600;
 
 interface KnobLabelProps {
@@ -253,7 +234,7 @@ interface KnobLabelProps {
   onType: (typed: string) => void;
 }
 
-// LabeledSlider's label: the name, or the value while the knob moves and a moment after. Click it to type a value
+// LabeledKnob's label: the name, or the value while the knob moves and a moment after. Click it to type a value
 function KnobLabel({ bounds, text, colour, valueText, dragging, enabled, onType }: KnobLabelProps) {
   const [held, setHeld] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -312,7 +293,7 @@ function KnobLabel({ bounds, text, colour, valueText, dragging, enabled, onType 
         setEditing(true);
       }}
     >
-      <FittedText text={dragging || held ? valueText : text} width={bounds.width - 2 * LABEL_INSET} />
+      <FittedText text={dragging || held ? valueText : text} width={bounds.width - 2 * LABEL_INSET} centred />
     </button>
   );
 }
@@ -337,9 +318,9 @@ export function Knob({ backend, id, bounds: area, label, modulatable = false, en
   const labelled = label && { ...label, ...layOutBelowLabel(area) };
   const bounds = labelled?.control ?? area;
 
-  // As LabeledSlider's onTextChange
+  // As LabeledKnob's onTextChange
   const type = (typed: string) => {
-    const next = parseValue(param, typed);
+    const next = parseKnobValue(param, typed);
     if (next !== null && next !== value) commit(next);
   };
 
@@ -509,26 +490,6 @@ export function ComboBox({ bounds, text, items, enabled = true }: {
   );
 }
 
-interface TextButtonProps {
-  text: string;
-  style: CSSProperties;
-  onClick(e: ReactMouseEvent<HTMLButtonElement>): void;
-}
-
-// CustomLookAndFeel's drawButtonBackground and drawButtonText
-export function TextButton({ text, style, onClick }: TextButtonProps) {
-  return (
-    <button
-      type="button"
-      className="absolute cursor-pointer overflow-hidden rounded-sm border border-widget-border bg-widget px-1 text-ellipsis whitespace-nowrap text-fg hover:border-accent hover:text-accent active:border-accent active:text-accent"
-      style={{ ...style, fontSize: juceHeight(14) }}
-      onClick={onClick}
-    >
-      {text}
-    </button>
-  );
-}
-
 // A ComboBox on a choice parameter
 export function ChoiceBox({ backend, id, bounds, enabled = true }: { backend: ModulateBackend; id: string; bounds: Rect; enabled?: boolean }) {
   const { value, commit, param } = useParam(backend, id);
@@ -684,10 +645,10 @@ export function Label({ bounds, text, bold = false, colour, align = 'center', si
 }) {
   return (
     <div
-      className={`flex items-center ${align === 'left' ? 'justify-start pl-1.25 [&>span]:origin-left' : 'justify-center'} ${bold ? 'font-bold' : ''}`}
+      className={`flex items-center ${align === 'left' ? 'justify-start pl-1.25' : 'justify-center'} ${bold ? 'font-bold' : ''}`}
       style={{ ...at(bounds), fontSize: juceHeight(size), color: colour, opacity: enabled ? 1 : DISABLED_ALPHA }}
     >
-      <FittedText text={text} width={bounds.width - 2 * LABEL_INSET} />
+      <FittedText text={text} width={bounds.width - 2 * LABEL_INSET} centred={align !== 'left'} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parsePreset } from '@samplerealm/modules/demo/localPresets.ts';
 import { memoryStorage, presetXml } from '@samplerealm/modules/testing/presets.ts';
-import { parsePresetState, STORAGE_KEY } from '../../src/demo/presetState.ts';
+import { parseExtraState, STORAGE_KEY } from '../../src/demo/presetState.ts';
 import { workletBackend } from '../../src/demo/workletBackend.ts';
 import { info } from '../engine.ts';
 
@@ -42,12 +42,11 @@ const named = <T extends { name: string }>(list: T[], name: string) => {
   return found;
 };
 
-test('factory files are read with their category, values, modulation and curves', () => {
-  assert.deepEqual(parsePreset(factory[0]!, parsePresetState), {
+test('factory files are read with their category, modulation and curves', () => {
+  assert.deepEqual(parsePreset(factory[0]!, parseExtraState), {
     name: 'Wobble',
     category: 'Bass',
     isFactory: true,
-    params: { filter_cutoff: 400 },
     modulation: { filter_cutoff: { source: 'lfo', index: 2, min: 0.2, max: 0.8 } },
     curves: [[], [], [{ x: 0, y: 0 }, { x: 0.5, y: 1 }, { x: 1, y: 0 }], []],
   });
@@ -125,13 +124,7 @@ test('an LFO with no points keeps the next LFO its own curve', () => {
     </LFOCurves>
   </Parameters></PRESET>`;
 
-  assert.deepEqual(parsePresetState(xml).curves, [[], [{ x: 0, y: 0.2 }, { x: 1, y: 0.8 }], [], []]);
-});
-
-test('a value that is missing or not a number loads at its default', () => {
-  const xml = '<PRESET name="Bad"><Parameters><PARAM id="filter_cutoff"/><PARAM id="osc1_gain" value=""/><PARAM id="osc2_gain" value="loud"/></Parameters></PRESET>';
-
-  assert.deepEqual(parsePresetState(xml).params, {});
+  assert.deepEqual(parseExtraState(xml).curves, [[], [{ x: 0, y: 0.2 }, { x: 1, y: 0.8 }], [], []]);
 });
 
 test('a stored preset loads its values, modulation and curves, skipping ids this engine lacks', async () => {
@@ -139,9 +132,11 @@ test('a stored preset loads its values, modulation and curves, skipping ids this
     [STORAGE_KEY]: JSON.stringify([{
       name: 'Old',
       category: 'Lead',
-      params: { gone: 1, filter_cutoff: 900 },
-      modulation: { osc1_morph: { source: 'env', index: 0, min: 0.1, max: 0.5 } },
-      curves: [[{ x: 0, y: 1 }, { x: 1, y: 0 }]],
+      values: { gone: 1, filter_cutoff: 900 },
+      extra: {
+        modulation: { osc1_morph: { source: 'env', index: 0, min: 0.1, max: 0.5 } },
+        curves: [[{ x: 0, y: 1 }, { x: 1, y: 0 }]],
+      },
     }]),
   });
   const { backend, presets, cutoff } = setUp(storage);

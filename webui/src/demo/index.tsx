@@ -7,12 +7,11 @@ import { EDITOR_HEIGHT, EDITOR_WIDTH } from '../layout.ts';
 import { ModulateEditor } from '../ModulateEditor.tsx';
 import { factoryPresets } from './factoryPresets.ts';
 import { Keyboard } from './Keyboard.tsx';
-import { workletBackend, type WorkletBackend } from './workletBackend.ts';
+import processorUrl from '@samplerealm/modules/demo/processor.js?url';
+import { LIVE_FRAMES, workletBackend, type WorkletBackend } from './workletBackend.ts';
 import './styles.css';
 
 const ENGINE_URL = 'engine.wasm';
-// Modulate's own, in public/demo/
-const PROCESSOR_URL = 'processor.js';
 
 // C3
 const LOW_NOTE = 48;
@@ -22,10 +21,10 @@ const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 
 async function startAudio(backend: WorkletBackend, wasm: ArrayBuffer, context: AudioContext) {
-  const node = await startWorklet(context, PROCESSOR_URL, {
+  const node = await startWorklet(context, processorUrl, {
     numberOfInputs: 0,
     outputChannelCount: [2],
-    processorOptions: { wasm },
+    processorOptions: { wasm, channels: 2, frames: LIVE_FRAMES },
   });
 
   node.connect(context.destination);

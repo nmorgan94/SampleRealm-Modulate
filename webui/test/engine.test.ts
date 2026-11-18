@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { blockSize, rms, sampleRate } from '@samplerealm/modules/testing/engine.ts';
-import { SOURCE_NUMBERS, type ModulationSource } from '../src/backend.ts';
+import { EnvelopeStage, SOURCE_NUMBERS, type ModulationSource } from '../src/backend.ts';
+import { toLive } from '../src/demo/workletBackend.ts';
 import { freshEngine, indexOf } from './engine.ts';
 
 const noteOn = 0x90;
@@ -30,10 +31,7 @@ function synth(rate: number | null = sampleRate) {
     return { left: Array.from(left!), right: Array.from(right!) };
   };
 
-  const live = () => {
-    const values = Array.from(new Float32Array(engine.memory.buffer, engine.live(), 16));
-    return { lfoPhase: values.slice(0, 4), lfoValue: values.slice(4, 8), envelopeLevel: values.slice(8, 12) };
-  };
+  const live = () => toLive(new Float32Array(engine.memory.buffer, engine.live(), engine.liveSize()));
 
   return { engine, info, set, view, modulate, clearModulation, writePoints, curve, play, live };
 }
@@ -157,6 +155,22 @@ test('changing the release while it plays carries on from the same level, at the
 
   assert.ok(after < before && before - after < 0.05, `${before} to ${after}`);
   assert.equal(peak(seconds(s.play(0.3).left, 0.2, 0.3)), 0);
+});
+
+test("the live state ends with each envelope's stage, as the demo's worklet posts it", () => {
+  const s = sineSynth();
+  s.set('env1_attack', 1);
+  s.set('env1_release', 1);
+  assert.deepEqual(s.live().envelopeStage, [EnvelopeStage.Idle, EnvelopeStage.Idle, EnvelopeStage.Idle, EnvelopeStage.Idle]);
+
+  s.engine.midi(noteOn, 57, 100);
+  s.play(0.1);
+  assert.equal(s.live().envelopeStage[0], EnvelopeStage.Attack);
+  assert.ok(s.live().envelopeProgress[0]! > 0 && s.live().envelopeProgress[0]! < 1);
+
+  s.engine.midi(noteOff, 57, 0);
+  s.play(0.1);
+  assert.equal(s.live().envelopeStage[0], EnvelopeStage.Release);
 });
 
 test('releasing a note fades it to silence within the release time', () => {

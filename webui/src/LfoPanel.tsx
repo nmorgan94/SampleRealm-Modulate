@@ -1,5 +1,5 @@
 // Mirrors Source/ui/LFOPanel.h and CurveEditor.h
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { MAX_CURVE_POINTS, NUM_LFOS, type ModulateBackend, type Point } from './backend.ts';
 import { ChoiceBox, ComboBox, Knob, Label, PanelBox, PillToggle, SourceTabs, type Rect } from './controls.tsx';
 import { evaluate, pointsOrDefault, SHAPES } from './curves.ts';
@@ -24,7 +24,7 @@ function CurveEditor({ backend, lfo, bounds }: { backend: ModulateBackend; lfo: 
   const { width, height } = bounds;
   const toPixels = ({ x, y }: Point) => [x * width, (1 - y) * height] as const;
 
-  const positionOf = (e: ReactPointerEvent<SVGSVGElement>) => pointIn(e.currentTarget, width, e.clientX, e.clientY);
+  const positionOf = (e: ReactMouseEvent<SVGSVGElement>) => pointIn(e.currentTarget, width, e.clientX, e.clientY);
 
   const nearest = (at: { x: number; y: number }) => {
     let found: number | null = null;
@@ -41,6 +41,7 @@ function CurveEditor({ backend, lfo, bounds }: { backend: ModulateBackend; lfo: 
   };
 
   const save = (next: Point[]) => backend.setCurve(lfo, next);
+  const endDrag = () => (dragged.current = null);
 
   const curve = useMemo(() => curvePath(RESOLUTION, width, height, (x) => evaluate(points, tension, x)), [points, tension, width, height]);
   const phase = live?.lfoPhase[lfo];
@@ -54,20 +55,19 @@ function CurveEditor({ backend, lfo, bounds }: { backend: ModulateBackend; lfo: 
       aria-label={`LFO ${lfo + 1} shape`}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
+        const index = nearest(positionOf(e));
+        dragged.current = index;
+        if (index !== null) e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onDoubleClick={(e) => {
         const at = positionOf(e);
         const index = nearest(at);
 
-        if (e.detail === 2) {
-          if (index !== null && index > 0 && index < points.length - 1) save(points.filter((_, i) => i !== index));
-          else if (index === null && points.length < MAX_CURVE_POINTS) {
-            const added = { x: clamp01(at.x / width), y: clamp01(1 - at.y / height) };
-            save([...points.filter((p) => p.x < added.x), added, ...points.filter((p) => p.x >= added.x)]);
-          }
-          return;
+        if (index !== null && index > 0 && index < points.length - 1) save(points.filter((_, i) => i !== index));
+        else if (index === null && points.length < MAX_CURVE_POINTS) {
+          const added = { x: clamp01(at.x / width), y: clamp01(1 - at.y / height) };
+          save([...points.filter((p) => p.x < added.x), added, ...points.filter((p) => p.x >= added.x)]);
         }
-
-        dragged.current = index;
-        if (index !== null) e.currentTarget.setPointerCapture(e.pointerId);
       }}
       onPointerMove={(e) => {
         const at = positionOf(e);
@@ -90,7 +90,8 @@ function CurveEditor({ backend, lfo, bounds }: { backend: ModulateBackend; lfo: 
         next[index] = { x, y };
         save(next);
       }}
-      onPointerUp={() => (dragged.current = null)}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
       onPointerLeave={() => dragged.current === null && setHovered(null)}
     >
       <CurveBackground width={width} height={height} centreLine />

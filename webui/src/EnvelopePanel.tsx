@@ -1,5 +1,5 @@
 // Mirrors Source/ui/EnvelopePanel.h and EnvelopeEditor.h
-import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { EnvelopeStage, NUM_ENVELOPES, type ModulateBackend } from './backend.ts';
 import { Knob, PanelBox, SourceTabs, type Rect } from './controls.tsx';
 import { CurveBackground, ControlPoint, PLAYHEAD_COLOUR } from './curveDisplay.tsx';
@@ -48,14 +48,14 @@ function EnvelopeEditor({ backend, envelope, bounds }: { backend: ModulateBacken
     [attack, decay, sustain, release, attackCurve, decayCurve, releaseCurve, width, height]
   );
 
-  const positionOf = (e: ReactPointerEvent<SVGSVGElement>) => pointIn(e.currentTarget, width, e.clientX, e.clientY);
+  const positionOf = (e: ReactMouseEvent<SVGSVGElement>) => pointIn(e.currentTarget, width, e.clientX, e.clientY);
   const nearest = (at: { x: number; y: number }) => {
     const distances = handles.map(({ x, y }) => Math.hypot(at.x - x, at.y - y));
     const closest = Math.min(...distances);
     return closest < HIT_RADIUS ? distances.indexOf(closest) : null;
   };
 
-  const endDrag = (e: ReactPointerEvent<SVGSVGElement>) => {
+  const endDrag = (e: ReactMouseEvent<SVGSVGElement>) => {
     if (dragged === null) return;
     backend.endGesture(id(CURVES[dragged.index]));
     setDragged(null);
@@ -89,14 +89,13 @@ function EnvelopeEditor({ backend, envelope, bounds }: { backend: ModulateBacken
         const index = nearest(at);
         if (index === null) return;
 
-        if (e.detail === 2) {
-          curves[index]!.commit(0);
-          return;
-        }
-
         backend.beginGesture(id(CURVES[index]));
         setDragged({ index, startY: at.y, startCurve: curves[index]!.value });
         e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onDoubleClick={(e) => {
+        const index = nearest(positionOf(e));
+        if (index !== null) curves[index]!.commit(0);
       }}
       onPointerMove={(e) => {
         const at = positionOf(e);

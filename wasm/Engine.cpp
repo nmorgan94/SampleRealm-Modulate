@@ -31,7 +31,7 @@ namespace
     // x, y pairs, written before setCurve or curveValue
     std::array<float, 2 * LfoCurve::maxPoints> points {};
 
-    std::array<float, 4 * Modulation::numSources> liveValues {};
+    std::array<float, 5 * Modulation::numSources> liveValues {};
 
     // For the web UI's tests
     Filter responseFilter;
@@ -141,7 +141,7 @@ WASM_EXPORT (peak) float peak (int index)
     return index >= 0 && index < numChannels ? meter.readAndReset (index) : 0.0f;
 }
 
-// Per source: LFO phases, LFO values, envelope levels, envelope stage progress
+// Per source: LFO phases, LFO values, envelope levels, envelope stage progress, and envelope stages as ADSREnvelope::State
 WASM_EXPORT (live) float* live()
 {
     const auto& state = synth.getLive();
@@ -151,16 +151,15 @@ WASM_EXPORT (live) float* live()
         for (const auto& value : *group)
             *out++ = value.load();
 
+    for (const auto& stage : state.envelopeStage)
+        *out++ = static_cast<float> (std::to_underlying (stage.load()));
+
     return liveValues.data();
 }
 
-// As ADSREnvelope::State: idle, attack, decay, sustain, release
-WASM_EXPORT (envelopeStage) int envelopeStage (int index)
+WASM_EXPORT (liveSize) int liveSize()
 {
-    if (index < 0 || index >= ModulateSynth::numEnvelopes)
-        return 0;
-
-    return std::to_underlying (synth.getLive().envelopeStage[static_cast<size_t> (index)].load());
+    return static_cast<int> (liveValues.size());
 }
 
 //==============================================================================

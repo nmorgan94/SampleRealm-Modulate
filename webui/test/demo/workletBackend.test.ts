@@ -24,13 +24,13 @@ test('changes made before the worklet starts reach it in order', () => {
 
   assert.deepEqual(sent, [
     { type: 'param', index: indexOf('filter_cutoff'), value: 2500 },
-    { type: 'modulation', index: indexOf('filter_cutoff'), source: 2, sourceIndex: 1, min: 0.2, max: 0.8 },
-    { type: 'curve', lfo: 2, points: [0, 0.1, 1, 0.1] },
+    { type: 'call', name: 'setModulation', args: [indexOf('filter_cutoff'), 2, 1, 0.2, 0.8] },
+    { type: 'call', name: 'setCurve', args: [2, 2], floats: { at: 'points', values: [0, 0.1, 1, 0.1] } },
     { type: 'midi', bytes: [0x90, 60, 100] },
   ]);
 
   backend.setModulation('filter_cutoff', null);
-  assert.deepEqual(sent.at(-1), { type: 'modulation', index: indexOf('filter_cutoff'), source: 0, sourceIndex: 0, min: 0, max: 0 });
+  assert.deepEqual(sent.at(-1), { type: 'call', name: 'setModulation', args: [indexOf('filter_cutoff'), 0, 0, 0, 0] });
 });
 
 test("curves are cut to what the engine's points() holds", () => {
@@ -43,7 +43,12 @@ test("curves are cut to what the engine's points() holds", () => {
   backend.setCurve(0, long);
 
   assert.deepEqual(backend.getCurve(0), kept);
-  assert.deepEqual(sent.at(-1), { type: 'curve', lfo: 0, points: kept.flatMap(({ x, y }) => [x, y]) });
+  assert.deepEqual(sent.at(-1), {
+    type: 'call',
+    name: 'setCurve',
+    args: [0, MAX_CURVE_POINTS],
+    floats: { at: 'points', values: kept.flatMap(({ x, y }) => [x, y]) },
+  });
 });
 
 test("the worklet's levels and live state reach their listeners", () => {
@@ -56,9 +61,10 @@ test("the worklet's levels and live state reach their listeners", () => {
   const { port, receive } = fakePort();
   backend.attach(port);
 
-  const live: Live = { lfoPhase: [0.5, 0, 0, 0], lfoValue: [1, 0, 0, 0], envelopeLevel: [0.7, 0, 0, 0], envelopeProgress: [0, 0, 0, 0], envelopeStage: [3, 0, 0, 0] };
+  const live: Live = { lfoPhase: [0.5, 0, 0, 0], lfoValue: [1, 0, 0, 0], envelopeLevel: [0.75, 0, 0, 0], envelopeProgress: [0, 0.25, 0, 0], envelopeStage: [3, 1, 0, 0] };
   receive({ type: 'level', peaks: [0.25, 0.5] });
-  receive({ type: 'live', live });
+  // The engine's live(), as processor.js posts it
+  receive({ type: 'frame', frame: Float32Array.of(...live.lfoPhase, ...live.lfoValue, ...live.envelopeLevel, ...live.envelopeProgress, ...live.envelopeStage) });
 
   assert.deepEqual(levels, [{ peaks: [0.25, 0.5] }]);
   assert.deepEqual(lives, [live]);

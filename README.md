@@ -141,11 +141,12 @@ Needs Emscripten (`brew install emscripten`) and Node 24+.
 ## CI
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds the Release plugin on macOS and Windows
-and runs the unit tests. Start it by hand from **Actions → CI → Run workflow**, or with
-`gh workflow run ci.yml`. Tick **Also run pluginval** (`-f pluginval=true`) to validate too.
+and runs the unit tests and pluginval. It runs on every push to `main`, or by hand from
+**Actions → CI → Run workflow** or with `gh workflow run ci.yml`.
 
 Each run keeps the unsigned plugins under **Artifacts** for 30 days: `Modulate-macOS.tar.gz` (VST3
 and AU) and `Modulate-Windows.tar.gz` (VST3).
 
 [`.github/workflows/wasm.yml`](.github/workflows/wasm.yml) builds and tests the web demo, and keeps
-the demo folder as an artifact of the same name. Start it with `gh workflow run wasm.yml`.
+the demo folder as an artifact of the same name. It runs on every push to `main`, or with
+`gh workflow run wasm.yml`.

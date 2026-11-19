@@ -1,13 +1,10 @@
 name: CI
 
-# Runs only when started by hand, from the Actions tab or `gh workflow run ci.yml`
+# On a push to main, or by hand from the Actions tab or `gh workflow run ci.yml`
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      pluginval:
-        description: Also run pluginval
-        type: boolean
-        default: false
 
 jobs:
   build:
@@ -33,8 +30,8 @@ jobs:
       - name: Build (Release)
         run: cmake --workflow --preset release
 
-      - name: Tests (Release)
-        run: cmake --workflow --preset ${{ inputs.pluginval && 'test-release' || 'unit-release' }}
+      - name: Tests and pluginval (Release)
+        run: cmake --workflow --preset test-release
 
       # tar keeps the bundles' file permissions, and is uploaded as-is rather than zipped
       - name: Package plugins

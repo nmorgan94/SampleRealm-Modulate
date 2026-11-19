@@ -73,7 +73,7 @@ TEST_CASE_METHOD (TestHelpers::ProcessorFixture, "Parameters match the snapshot 
         { "drive_hq", 1, "Drive HQ", "", 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, { "Off", "Off", "On" } },
         { "glide_time", 1, "Glide Time", "", 0.0f, 2.0f, 0.001f, 0.4f, 0.0f, { "0.000", "0.354", "2.000" } },
         { "glide_mode", 1, "Glide Mode", "", 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, { "Time", "Time", "Rate" } },
-        { "coarse_pitch", 1, "Coarse Pitch", "", -36.0f, 36.0f, 0.01f, 1.0f, 0.0f, { "-36.00", "-0.00", "36.00" } },
+        { "coarse_pitch", 1, "Coarse Pitch", "", -36.0f, 36.0f, 0.01f, 1.0f, 0.0f, { "-36.00", "0.00", "36.00" } },
         { "num_voices", 1, "Voices", "", 1.0f, 8.0f, 1.0f, 1.0f, 8.0f, { "1", "4", "8" } },
         { "unison_voices", 1, "Unison", "", 1.0f, 7.0f, 1.0f, 1.0f, 1.0f, { "1", "4", "7" } },
         { "unison_detune", 1, "Detune", "", 0.0f, 100.0f, 1.0f, 1.0f, 15.0f, { "0", "50", "100" } },

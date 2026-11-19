@@ -111,6 +111,14 @@ TEST_CASE_METHOD (ProcessorFixture, "A session saved by 0.0.1 loads the same", "
             if (isMissingFrom (*session, *spec))
                 resaved->removeChildElement (resaved->getChildByAttribute ("id", spec->id), true);
 
+        // Windows snaps Coarse Pitch's -0.000001 to 0, so it alone is compared as a number
+        auto* coarsePitch = resaved->getChildByAttribute ("id", "coarse_pitch");
+        const auto* savedCoarsePitch = session->getChildByAttribute ("id", "coarse_pitch");
+        REQUIRE (coarsePitch != nullptr);
+        REQUIRE (savedCoarsePitch != nullptr);
+        CHECK_THAT (coarsePitch->getDoubleAttribute ("value"), WithinAbs (savedCoarsePitch->getDoubleAttribute ("value"), 1.0e-6));
+        coarsePitch->setAttribute ("value", savedCoarsePitch->getStringAttribute ("value"));
+
         CHECK (resaved->isEquivalentTo (session.get(), true));
     }
 }
